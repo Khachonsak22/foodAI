@@ -163,7 +163,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       <div style="font-size:.72rem;color:var(--muted);">ทั้งหมด <?= number_format($total) ?> รายการ</div>
     </div>
     <button onclick="openModal()" class="btn btn-green">
-      <i class="fas fa-plus"></i> เพิ่มวัตถุดิบ
+      <i class="fas fa-plus"></i> เพิ่มวัตถุดิบ..
     </button>
   </header>
   
