@@ -110,7 +110,7 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 $apiKey = GEMINI_API_KEY;
 
 // ✅ แก้ไข 1: เปลี่ยนเป็นโมเดล gemini-2.0-flash ที่ถูกต้องและเสถียร
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" . $apiKey;
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
 // ✅ แก้ไข 2: เพิ่มการล็อกคอ AI ให้ส่งกลับมาเป็น JSON แบบ 100%
 $data = [
