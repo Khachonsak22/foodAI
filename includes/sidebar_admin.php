@@ -1,0 +1,170 @@
+<?php
+// sidebar_admin.php
+// ตรวจสอบชื่อหน้าปัจจุบันเพื่อทำสถานะ Active
+$current_page = basename($_SERVER['PHP_SELF']);
+
+// 1. ให้ Sidebar Admin ดึงชื่อผู้ใช้จริงเช่นเดียวกัน
+$sb_admin_fname = "Admin";
+$sb_admin_lname = "";
+
+if (isset($_SESSION['user_id']) && isset($conn)) {
+    $sb_adm_sql = "SELECT first_name, last_name FROM users WHERE id = ?";
+    $sb_adm_stmt = $conn->prepare($sb_adm_sql);
+    $sb_adm_stmt->bind_param("i", $_SESSION['user_id']);
+    $sb_adm_stmt->execute();
+    $sb_adm_res = $sb_adm_stmt->get_result()->fetch_assoc();
+    if ($sb_adm_res) {
+        $sb_admin_fname = $sb_adm_res['first_name'] ?? 'Admin';
+        $sb_admin_lname = $sb_adm_res['last_name'] ?? '';
+    }
+}
+$sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
+?>
+<aside class="sidebar">
+
+  <div class="sb-logo">
+    <div class="sb-logo-icon"><i class="bi bi-person-fill" style="color: #ffffff;"></i></div>
+    <div>
+      <div class="sb-logo-text">Admin Panel</div>
+      <div class="sb-logo-sub">Control Center</div>
+    </div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-label">การจัดการระบบ</div>
+
+    <a href="admin_dashboard.php" class="nav-item <?php echo ($current_page === 'admin_dashboard.php') ? 'active' : ''; ?>">
+      <span class="ni"><i class="fas fa-chart-line"></i></span>
+      <span>Dashboard</span>
+    </a>
+
+    <a href="admin_users.php" class="nav-item <?php echo ($current_page === 'admin_users.php') ? 'active' : ''; ?>">
+      <span class="ni"><i class="fas fa-users"></i></span>
+      <span>จัดการผู้ใช้</span>
+    </a>
+
+    <a href="admin_recipes.php" class="nav-item <?php echo ($current_page === 'admin_recipes.php') ? 'active' : ''; ?>">
+      <span class="ni"><i class="fas fa-utensils"></i></span>
+      <span>จัดการสูตรอาหาร</span>
+    </a>
+
+    <a href="admin_ingredients.php" class="nav-item <?php echo ($current_page === 'admin_ingredients.php') ? 'active' : ''; ?>">
+      <span class="ni"><i class="fas fa-carrot"></i></span>
+      <span>จัดการวัตถุดิบ</span>
+    </a>
+
+    <a href="admin_chat_logs.php" class="nav-item <?php echo ($current_page === 'admin_chat_logs.php') ? 'active' : ''; ?>">
+      <span class="ni"><i class="fas fa-comments"></i></span>
+      <span>Chat Logs</span>
+    </a>
+
+    <div class="sb-divider"></div>
+    <div class="sb-label">รายงานและตั้งค่า</div>
+
+    <a href="admin_analytics.php" class="nav-item <?php echo ($current_page === 'admin_analytics.php') ? 'active' : ''; ?>">
+      <span class="ni"><i class="fas fa-chart-bar"></i></span>
+      <span>สถิติและรายงาน</span>
+    </a>
+
+    <a href="admin_settings.php" class="nav-item <?php echo ($current_page === 'admin_settings.php') ? 'active' : ''; ?>">
+      <span class="ni"><i class="fas fa-cog"></i></span>
+      <span>ตั้งค่าระบบ</span>
+    </a>
+
+    <div class="sb-divider"></div>
+    
+    <a href="../pages/dashboard.php" class="nav-item" style="background:linear-gradient(135deg,var(--g50),rgba(20,184,166,.08));border:1.5px dashed var(--g300);">
+      <span class="ni" style="background:linear-gradient(135deg,var(--g500),var(--t500));color:#fff;border:none;">
+        <i class="fas fa-arrow-right-arrow-left"></i>
+      </span>
+      <span style="color:var(--g600);font-weight:600;">ไปหน้าผู้ใช้</span>
+      <i class="fas fa-external-link" style="margin-left:auto;font-size:.65rem;color:var(--g400);"></i>
+    </a>
+  </nav>
+
+  <div class="sb-user">
+    <div class="sb-av"><?= htmlspecialchars($sb_admin_initials ?: 'A') ?></div>
+    <div style="min-width:0; flex:1;">
+      <div class="sb-un">
+        <?= htmlspecialchars($sb_admin_fname . ' ' . $sb_admin_lname) ?>
+      </div>
+      <div style="font-size:.65rem; color:var(--muted); font-family: 'Kanit', sans-serif;">ผู้ดูแลระบบ</div>
+    </div>
+    <a href="../pages/logout.php" title="ออกจากระบบ" style="margin-left:auto; width:32px; height:32px; border-radius:8px; border:1px solid var(--g200); display:flex; align-items:center; justify-content:center; color:var(--g600); text-decoration:none; font-size:.7rem; transition:all .18s;">
+      <i class="fas fa-sign-out-alt"></i>
+    </a>
+  </div>
+
+</aside>
+
+<style>
+/* CSS สำหรับ Admin Sidebar โทนสีเขียว */
+:root {
+  --g50: #f0fdf4; --g100: #dcfce7; --g200: #bbf7d0;
+  --g500: #22c55e; --g600: #16a34a; --g700: #15803d;
+  --t500: #14b8a6;
+  --sb-w: 260px;
+}
+
+.sidebar {
+  width: var(--sb-w);
+  min-height: 100vh;
+  background: #fff;
+  border-right: 1px solid #e5ede6;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 100;
+  box-shadow: 4px 0 24px rgba(34,197,94,.06);
+}
+
+.sb-logo { padding: 24px 22px 20px; border-bottom: 1px solid #e5ede6; display: flex; align-items: center; gap: 11px; }
+
+/* เปลี่ยนสี Logo Icon เป็นเขียว-ฟ้า Gradient ตามหน้าบ้าน */
+.sb-logo-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--g500), var(--t500));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; box-shadow: 0 4px 12px rgba(34,197,94,.35);
+}
+
+.sb-logo-text { font-family: 'Nunito',sans-serif; font-size: 1.18rem; font-weight: 800; color: var(--g700); letter-spacing: -.02em; line-height: 1; }
+
+.sb-nav { padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+
+.nav-item { display: flex; align-items: center; gap: 11px; padding: 11px 14px; border-radius: 12px; text-decoration: none; color: var(--sub); font-size: .82rem; font-weight: 500; transition: all .18s; }
+
+/* Hover และ Active เปลี่ยนเป็นสีเขียว */
+.nav-item:hover { background: var(--g50); color: var(--g600); }
+.nav-item.active { background: var(--g50); color: var(--g600); font-weight: 600; }
+.nav-item.active .ni { background: var(--g600); color: #fff; border-color: var(--g600); }
+
+.ni {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--g50); border: 1px solid var(--g200);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; flex-shrink: 0; transition: all .18s; color: var(--g600);
+}
+.nav-item:hover .ni { background: var(--g100); }
+
+.sb-user { border-top: 1px solid #e5ede6; padding: 16px; background: var(--g50); display: flex; align-items: center; gap: 11px; }
+.sb-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--g500), var(--t500));
+  display: flex; align-items: center; justify-content: center;
+  font-size: .82rem; font-weight: 800; color: #fff;
+}
+.sb-divider { height: 1px; background: #e5ede6; margin: 6px 12px; }
+
+/* ล็อคฟอนต์และการตั้งค่าให้ชื่อผู้ใช้ไม่กระโดดตามหน้า */
+.sb-un {
+  font-family: 'Kanit', sans-serif !important; 
+  font-size: .78rem !important; 
+  font-weight: 600 !important; 
+  color: var(--g700); 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+}
+</style>
