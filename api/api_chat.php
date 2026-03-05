@@ -107,7 +107,7 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 
 // ใส่ API Key ของเจ้าเด้ออ้าย
 $apiKey = GEMINI_API_KEY;
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=" . $apiKey;
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
 $data = [
     "contents" => [[ "parts" => [[ "text" => $systemPrompt . "\nUser: " . $userMessage ]] ]]
