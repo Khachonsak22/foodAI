@@ -1,6 +1,26 @@
 <?php
 session_start();
 include '../config/connect.php';
+
+// ตรวจสอบเมื่อมีการกดปุ่ม "บันทึกการตั้งค่า"
+if(isset($_POST['save_api_settings'])) {
+    $new_api_key = $_POST['api_key'];
+    $new_api_model = $_POST['api_model'];
+    
+    // อัปเดตข้อมูลลงฐานข้อมูล
+    $update_stmt = $conn->prepare("UPDATE system_settings SET api_key = :api_key, api_model = :api_model WHERE id = 1");
+    $update_stmt->bindParam(':api_key', $new_api_key);
+    $update_stmt->bindParam(':api_model', $new_api_model);
+    $update_stmt->execute();
+    
+    echo "<script>alert('อัปเดต API Key และ Model เรียบร้อยแล้ว!'); window.location.href='admin_settings.php';</script>";
+}
+
+// ดึงข้อมูลปัจจุบันมาแสดงโชว์ในช่องกรอก
+$stmt = $conn->prepare("SELECT api_key, api_model FROM system_settings WHERE id = 1");
+$stmt->execute();
+$setting = $stmt->fetch(PDO::FETCH_ASSOC);
+
 if (!isset($_SESSION['user_id'])) { header("Location: ../pages/login.php"); exit(); }
 $admin_stmt = $conn->prepare("SELECT email, first_name FROM users WHERE id = ?");
 $admin_stmt->bind_param("i", $_SESSION['user_id']);
@@ -169,18 +189,23 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       </div>
     </div>
     
-    <div class="card">
-      <h2 style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:16px;">🔑 API Configuration</h2>
-      <div class="setting-item">
-        <div>
-          <div style="font-size:.88rem;font-weight:600;">Gemini API Key</div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">จัดการ API Key สำหรับ AI (api_chat.php)</div>
-        </div>
-        <button onclick="alert('โปรดแก้ไขใน ../api/api_chat.php')" class="btn" style="background:var(--g500);color:#fff;">
-          <i class="fas fa-key"></i> แก้ไข
-        </button>
-      </div>
+    <form method="POST" action="">
+    <div class="form-group">
+        <label>Google Gemini API Key:</label>
+        <input type="text" name="api_key" class="form-control" value="<?php echo htmlspecialchars($setting['api_key']); ?>" required>
     </div>
+
+    <div class="form-group">
+        <label>AI Model:</label>
+        <select name="api_model" class="form-control" required>
+            <option value="gemini-2.5-flash" <?php if($setting['api_model'] == 'gemini-2.5-flash') echo 'selected'; ?>>Gemini 2.5 Flash (แนะนำ)</option>
+            <option value="gemini-2.0-flash" <?php if($setting['api_model'] == 'gemini-2.0-flash') echo 'selected'; ?>>Gemini 2.0 Flash</option>
+            <option value="gemini-1.5-flash" <?php if($setting['api_model'] == 'gemini-1.5-flash') echo 'selected'; ?>>Gemini 1.5 Flash</option>
+        </select>
+    </div>
+
+    <button type="submit" name="save_api_settings" class="btn btn-primary">บันทึกการตั้งค่า API</button>
+    </form>
     
     <div class="card" style="border-color:#fecaca;">
       <h2 style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:16px;color:#dc2626;">⚠️ Danger Zone</h2>

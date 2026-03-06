@@ -105,22 +105,27 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 หมายเหตุ: ถ้าผู้ใช้แค่ชวนคุยทั่วไป ไม่ได้ขอเมนู ให้ปล่อย recommended_menus เป็นอาเรย์ว่าง []
 ";
 
-// ใส่ API Key ของเจ้าเด้ออ้าย
-// ใส่ API Key ของคุณ
-$apiKey = GEMINI_API_KEY;
-// ✅ แก้ไข 1: เปลี่ยนเป็นโมเดล gemini-2.5-flash ที่ถูกต้องและเสถียร
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
-// ✅ แก้ไข 2: เพิ่มการล็อกคอ AI ให้ส่งกลับมาเป็น JSON แบบ 100%
+// 1. อย่าลืม require ไฟล์เชื่อมต่อฐานข้อมูลมาไว้ด้านบนสุด
+require_once '../config/connect.php'; 
+
+// 2. ดึง API Key และ Model จากตาราง system_settings แบบสดๆ
+$stmt = $conn->prepare("SELECT api_key, api_model FROM system_settings WHERE id = 1");
+$stmt->execute();
+$setting = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$apiKey = $setting['api_key'];
+$apiModel = $setting['api_model']; 
+
+// 3. เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
+$url = "https://generativelanguage.googleapis.com/v1beta/models/{$apiModel}:generateContent?key=" . $apiKey;
+
+// 4. จัดรูปแบบข้อมูล (ล็อกคอเป็น JSON เพื่อความเสถียร)
 $data = [
     "contents" => [[ "parts" => [[ "text" => $systemPrompt . "\nUser: " . $userMessage ]] ]],
     "generationConfig" => [
         "responseMimeType" => "application/json"
     ]
-];
-
-$data = [
-    "contents" => [[ "parts" => [[ "text" => $systemPrompt . "\nUser: " . $userMessage ]] ]]
 ];
 
 $ch = curl_init($url);
