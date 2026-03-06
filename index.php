@@ -516,7 +516,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
     </div>
     <div class="features-grid">
       <div class="feature-card reveal">
-        <div class="feature-icon"><i class="fas fa-robot" style="color: #22c55e;"></i></div>
+        <div class="feature-icon"><i class="fas fa-robot" style="color: #62d4da;"></i></div>
         <h3 class="feature-title">AI แนะนำเมนู</h3>
         <p class="feature-desc">
           ปัญญาประดิษฐ์วิเคราะห์และแนะนำเมนูที่เหมาะกับโรคประจำตัว 
@@ -532,7 +532,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
         </p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon"><i class="bi bi-hospital-fill" style="color: #757977;"></i></div>
+        <div class="feature-icon"><i class="bi bi-hospital-fill" style="color: #ffffff;"></i></div>
         <h3 class="feature-title">กรองตามโรค</h3>
         <p class="feature-desc">
           ค้นหาเมนูที่ปลอดภัยสำหรับโรคประจำตัว 20+ โรค
