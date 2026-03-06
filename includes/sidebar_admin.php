@@ -19,15 +19,15 @@ if (isset($_SESSION['user_id']) && isset($conn)) {
 $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 ?>
 
-<div class="sidebar-overlay" onclick="closeSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <aside class="sidebar" id="adminSidebar">
 
-  <a href="admin_dashboard.php" class="sb-logo">
+  <a href="admin_dashboard.php" class="sb-logo" style="text-decoration: none !important;">
     <div class="sb-logo-icon"><i class="fas fa-user-shield" style="color: #ffffff;"></i></div>
     <div>
-      <div class="sb-logo-text">Admin Panel</div>
-      <div class="sb-logo-sub">Control Center</div>
+      <div class="sb-logo-text" style="font-family: 'Nunito', sans-serif !important; font-size: 19px !important; font-weight: 800 !important; color: #15803d !important; margin: 0 !important; line-height: 1.1 !important;">Admin Panel</div>
+      <div class="sb-logo-sub" style="font-family: 'Kanit', sans-serif !important; font-size: 12px !important; color: #8da98f !important; font-weight: 400 !important; margin-top: 4px !important; letter-spacing: 0 !important; text-transform: none !important; line-height: 1.2 !important;">Control Center</div>
     </div>
   </a>
 
@@ -79,12 +79,12 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 
     <div class="sb-divider"></div>
     
-    <a href="../pages/dashboard.php" class="nav-item" style="background:linear-gradient(135deg,#f0fdf4,rgba(20,184,166,.08));border:1px dashed #86efac;">
-      <span class="ni" style="background:linear-gradient(135deg,#22c55e,#14b8a6);color:#fff;border:none;">
+    <a href="../pages/dashboard.php" class="nav-item" style="background:linear-gradient(135deg,#f0fdf4,rgba(20,184,166,.08)) !important; border:1px dashed #86efac !important;">
+      <span class="ni" style="background:linear-gradient(135deg,#22c55e,#14b8a6) !important; color:#fff !important; border:none !important;">
         <i class="fas fa-exchange-alt"></i>
       </span>
-      <span style="color:#16a34a;font-weight:600;">ไปหน้าผู้ใช้</span>
-      <i class="fas fa-external-link-alt" style="margin-left:auto;font-size:12px;color:#8da98f;"></i>
+      <span style="color:#16a34a !important; font-weight:600 !important;">ไปหน้าผู้ใช้</span>
+      <i class="fas fa-external-link-alt" style="margin-left:auto !important; font-size:12px !important; color:#8da98f !important;"></i>
     </a>
   </nav>
 
@@ -94,7 +94,7 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
       <div class="sb-un">
         <?= htmlspecialchars($sb_admin_fname . ' ' . $sb_admin_lname) ?>
       </div>
-      <div class="sb-user-role">ผู้ดูแลระบบ</div>
+      <div style="font-family: 'Kanit', sans-serif !important; font-size: 11px !important; color: #8da98f !important; margin-top: 2px !important; line-height: 1.2 !important;">ผู้ดูแลระบบ</div>
     </div>
     <a href="../pages/logout.php" class="logout-btn" title="ออกจากระบบ">
       <i class="fas fa-sign-out-alt"></i>
@@ -104,10 +104,14 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 </aside>
 
 <style>
-/* ล็อกการตั้งค่าทุกอย่างด้วย !important และหน่วย px เพื่อกัน Tailwind/Bootstrap ดึงไปกวน */
+/* =========================================
+   SIDEBAR CORE STYLES (Locked 100%)
+========================================= */
 #adminSidebar {
   width: 260px !important;
-  min-height: 100vh !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
+  height: 100vh !important;
   background: #fff !important;
   border-right: 1px solid #e5ede6 !important;
   display: flex !important;
@@ -116,30 +120,49 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   left: 0 !important; 
   top: 0 !important; 
   bottom: 0 !important;
-  z-index: 9999 !important; /* ดันไปชั้นสูงสุดทะลุทุก Topbar */
+  z-index: 10000 !important; /* ชั้นสูงสุด */
   box-shadow: 4px 0 24px rgba(34,197,94,.06) !important;
-  transition: transform .3s ease !important;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
   font-family: 'Kanit', sans-serif !important;
+  overflow: hidden !important;
 }
 
+/* =========================================
+   OVERLAY (MOBILE BACKGROUND) - แก้ไขข้อ 3 และ 4
+========================================= */
 .sidebar-overlay {
-  display: none;
   position: fixed !important;
-  inset: 0 !important;
-  background: rgba(0,0,0,.5) !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
   backdrop-filter: blur(3px) !important;
-  z-index: 9998 !important; /* อยู่ใต้ Sidebar แต่มิดหน้าจอ */
-  opacity: 0;
-  transition: opacity .3s ease !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  z-index: 9998 !important; /* อยู่ใต้ Sidebar 1 ชั้น */
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: opacity 0.3s ease, visibility 0.3s ease !important;
+  cursor: pointer !important; /* ให้รู้ว่ากดได้ */
 }
 
+/* คลาสโชว์ Overlay */
+.sidebar-overlay.show {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* =========================================
+   COMPONENTS INSIDE SIDEBAR
+========================================= */
 #adminSidebar .sb-logo { 
   padding: 24px 22px 20px !important; 
   border-bottom: 1px solid #e5ede6 !important; 
   display: flex !important; 
   align-items: center !important; 
-  gap: 11px !important; 
-  text-decoration: none !important;
+  gap: 12px !important; 
   transition: background 0.2s ease !important;
 }
 #adminSidebar .sb-logo:hover {
@@ -158,27 +181,6 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   color: #fff !important;
   box-shadow: 0 4px 12px rgba(34,197,94,.35) !important;
   flex-shrink: 0 !important;
-  transition: transform 0.2s ease !important;
-}
-#adminSidebar .sb-logo:hover .sb-logo-icon {
-  transform: scale(1.05) !important;
-}
-
-#adminSidebar .sb-logo-text { 
-  font-family: 'Nunito', sans-serif !important; 
-  font-size: 19px !important; 
-  font-weight: 800 !important; 
-  color: #15803d !important; 
-  letter-spacing: -.02em !important; 
-  line-height: 1 !important; 
-  margin: 0 !important;
-}
-
-#adminSidebar .sb-logo-sub {
-  font-family: 'Kanit', sans-serif !important;
-  font-size: 12px !important;
-  color: #8da98f !important;
-  margin-top: 4px !important;
 }
 
 #adminSidebar .sb-label {
@@ -188,7 +190,9 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   color: #8da98f !important;
   text-transform: uppercase !important;
   letter-spacing: .05em !important;
-  padding: 14px 14px 6px !important;
+  padding: 16px 14px 6px !important;
+  margin: 0 !important;
+  line-height: 1.5 !important;
 }
 
 #adminSidebar .sb-nav { 
@@ -209,9 +213,10 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   text-decoration: none !important; 
   color: #4b6b4e !important; 
   font-family: 'Kanit', sans-serif !important;
-  font-size: 14px !important; /* บังคับฟอนต์ 14px ทุกหน้า */
+  font-size: 14.5px !important; 
   font-weight: 500 !important; 
   transition: all .2s !important; 
+  margin: 0 !important;
 }
 
 #adminSidebar .nav-item span:not(.ni) {
@@ -251,10 +256,6 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   color: #16a34a !important;
 }
 
-#adminSidebar .nav-item:hover .ni { 
-  background: #dcfce7 !important; 
-}
-
 #adminSidebar .sb-user { 
   border-top: 1px solid #e5ede6 !important; 
   padding: 16px !important; 
@@ -262,12 +263,13 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   display: flex !important; 
   align-items: center !important; 
   gap: 12px !important; 
+  margin-top: auto !important;
 }
 
 #adminSidebar .sb-av {
   width: 40px !important; 
   height: 40px !important; 
-  border-radius: 50%;
+  border-radius: 50% !important;
   background: linear-gradient(135deg, #22c55e, #14b8a6) !important;
   display: flex !important; 
   align-items: center !important; 
@@ -279,12 +281,6 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   box-shadow: 0 4px 10px rgba(34,197,94,.25) !important;
 }
 
-#adminSidebar .sb-divider { 
-  height: 1px !important; 
-  background: #e5ede6 !important; 
-  margin: 8px 12px !important; 
-}
-
 #adminSidebar .sb-un {
   font-family: 'Kanit', sans-serif !important; 
   font-size: 14px !important; 
@@ -293,19 +289,19 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   white-space: nowrap !important; 
   overflow: hidden !important; 
   text-overflow: ellipsis !important; 
+  line-height: 1.2 !important;
 }
 
-#adminSidebar .sb-user-role {
-  font-family: 'Kanit', sans-serif !important;
-  font-size: 11px !important;
-  color: #8da98f !important;
-  margin-top: 2px !important;
+#adminSidebar .sb-divider { 
+  height: 1px !important; 
+  background: #e5ede6 !important; 
+  margin: 8px 12px !important; 
 }
 
 #adminSidebar .logout-btn {
   margin-left: auto !important; 
-  width: 34px !important; 
-  height: 34px !important; 
+  width: 36px !important; 
+  height: 36px !important; 
   border-radius: 10px !important; 
   border: 1px solid #bbf7d0 !important; 
   background: #fff !important; 
@@ -316,6 +312,7 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   text-decoration: none !important; 
   font-size: 14px !important; 
   transition: all .2s !important;
+  flex-shrink: 0 !important;
 }
 
 #adminSidebar .logout-btn:hover {
@@ -324,7 +321,9 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   border-color: #fecaca !important;
 }
 
-/* Mobile Styles */
+/* =========================================
+   RESPONSIVE LOGIC (แก้ปัญหาหน้าจอมือถือ)
+========================================= */
 @media (max-width: 1024px) {
   #adminSidebar {
     transform: translateX(-100%) !important;
@@ -332,31 +331,44 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   #adminSidebar.open {
     transform: translateX(0) !important;
   }
-  .sidebar-overlay.show {
-    display: block !important;
-    opacity: 1 !important;
-  }
 }
 
 @media (min-width: 1025px) {
   .sidebar-overlay {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  #adminSidebar {
+    transform: translateX(0) !important;
   }
 }
 </style>
 
 <script>
-// แก้ไขปุ่ม Hamburger ให้ทำงานสมบูรณ์ 100% ทุกหน้า
+// รอให้หน้าเว็บโหลดเสร็จสมบูรณ์ 100% ก่อนค่อยดึงสคริปต์ทำงาน
 document.addEventListener('DOMContentLoaded', function() {
+  
+  // 1. ดักจับปุ่ม Hamburger ทั้งหมดบนหน้าเว็บ
   const hamburgers = document.querySelectorAll('.hamburger');
   hamburgers.forEach(btn => {
-    // ล้างคำสั่งเก่าทิ้ง (กรณีที่หน้าเก่าติดโค้ด onclick ตัวเก่าไว้)
-    btn.removeAttribute('onclick');
-    // ฝังคำสั่งใหม่เข้าไปแทน
-    btn.addEventListener('click', toggleSidebar);
+    btn.removeAttribute('onclick'); // ล้างคำสั่งเก่าทิ้ง
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation(); // กันการคลิกทะลุ
+      toggleSidebar();
+    });
   });
 
-  // ปิดเมนูอัตโนมัติเวลากดเลือกลิงก์บนมือถือ
+  // 2. ดักจับ Overlay ถอด onclick เดิมใน HTML แล้วใช้ JS ควบคุมแทน (แก้ข้อ 4)
+  const overlay = document.getElementById('sidebarOverlay');
+  if (overlay) {
+    overlay.addEventListener('click', function() {
+      closeSidebar();
+    });
+  }
+
+  // 3. ปิดเมนูอัตโนมัติเมื่อกดเลือกลิงก์ (บนมือถือ)
   const navItems = document.querySelectorAll('#adminSidebar .nav-item');
   navItems.forEach(item => {
     item.addEventListener('click', function() {
@@ -367,20 +379,23 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-function toggleSidebar(e) {
-  if(e) e.preventDefault();
+function toggleSidebar() {
   const sidebar = document.getElementById('adminSidebar');
-  const overlay = document.querySelector('.sidebar-overlay');
+  const overlay = document.getElementById('sidebarOverlay');
   
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('show');
+  if(sidebar && overlay) {
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
 }
 
 function closeSidebar() {
   const sidebar = document.getElementById('adminSidebar');
-  const overlay = document.querySelector('.sidebar-overlay');
+  const overlay = document.getElementById('sidebarOverlay');
   
-  sidebar.classList.remove('open');
-  overlay.classList.remove('show');
+  if(sidebar && overlay) {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  }
 }
 </script>
