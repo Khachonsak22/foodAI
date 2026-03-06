@@ -107,8 +107,7 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 
 // ใส่ API Key ของเจ้าเด้ออ้าย
 // ใส่ API Key ของคุณ
-$apiKey = GEMINI_API_KEY;
-
+//$apiKey = GEMINI_API_KEY;
 // ✅ แก้ไข 1: เปลี่ยนเป็นโมเดล gemini-2.5-flash ที่ถูกต้องและเสถียร
 $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
