@@ -12,19 +12,25 @@ if(isset($_POST['save_api_settings'])) {
     $new_api_key = $_POST['api_key'];
     $new_api_model = $_POST['api_model'];
     
-    // อัปเดตข้อมูลลงฐานข้อมูล
-    $update_stmt = $conn->prepare("UPDATE system_settings SET api_key = :api_key, api_model = :api_model WHERE id = 1");
-    $update_stmt->bindParam(':api_key', $new_api_key);
-    $update_stmt->bindParam(':api_model', $new_api_model);
+    // อัปเดตข้อมูลลงฐานข้อมูล (แก้ไขเป็นรูปแบบ mysqli)
+    $update_stmt = $conn->prepare("UPDATE system_settings SET api_key = ?, api_model = ? WHERE id = 1");
+    $update_stmt->bind_param("ss", $new_api_key, $new_api_model);
     $update_stmt->execute();
     
     echo "<script>alert('อัปเดต API Key และ Model เรียบร้อยแล้ว!'); window.location.href='admin_settings.php';</script>";
 }
 
-// ดึงข้อมูลปัจจุบันมาแสดงโชว์ในช่องกรอก
-$stmt = $conn->prepare("SELECT api_key, api_model FROM system_settings WHERE id = 1");
-$stmt->execute();
-$setting = $stmt->fetch(PDO::FETCH_ASSOC);
+// ดึงข้อมูลปัจจุบันมาแสดงโชว์ในช่องกรอก (แก้ไขเป็นรูปแบบ mysqli)
+$stmt = $conn->query("SELECT api_key, api_model FROM system_settings WHERE id = 1");
+if ($stmt && $stmt->num_rows > 0) {
+    $setting = $stmt->fetch_assoc();
+} else {
+    // ป้องกัน Error กรณีเพิ่งสร้างตารางใหม่แล้วยังไม่มีข้อมูล
+    $setting = [
+        'api_key' => '',
+        'api_model' => 'gemini-2.5-flash'
+    ];
+}
 
 if (!isset($_SESSION['user_id'])) { header("Location: ../pages/login.php"); exit(); }
 $admin_stmt = $conn->prepare("SELECT email, first_name FROM users WHERE id = ?");
