@@ -106,18 +106,20 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 ";
 
 
-// 1. อย่าลืม require ไฟล์เชื่อมต่อฐานข้อมูลมาไว้ด้านบนสุด
-require_once '../config/connect.php'; 
+/// ── ดึง API Key และ Model จากตาราง system_settings (แก้ไขเป็นรูปแบบ mysqli ให้ถูกต้อง) ──
+$setting_stmt = $conn->query("SELECT api_key, api_model FROM system_settings WHERE id = 1");
 
-// 2. ดึง API Key และ Model จากตาราง system_settings แบบสดๆ
-$stmt = $conn->prepare("SELECT api_key, api_model FROM system_settings WHERE id = 1");
-$stmt->execute();
-$setting = $stmt->fetch(PDO::FETCH_ASSOC);
+if ($setting_stmt && $setting_stmt->num_rows > 0) {
+    $setting = $setting_stmt->fetch_assoc();
+    $apiKey = $setting['api_key'];
+    $apiModel = $setting['api_model']; 
+} else {
+    // กรณีหาข้อมูลในฐานข้อมูลไม่เจอ (กันเว็บพัง)
+    $apiKey = GEMINI_API_KEY;
+    $apiModel = 'gemini-2.5-flash';
+}
 
-$apiKey = $setting['api_key'];
-$apiModel = $setting['api_model']; 
-
-// 3. เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
+// เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
 $url = "https://generativelanguage.googleapis.com/v1beta/models/{$apiModel}:generateContent?key=" . $apiKey;
 
 // 4. จัดรูปแบบข้อมูล (ล็อกคอเป็น JSON เพื่อความเสถียร)
