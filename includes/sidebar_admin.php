@@ -19,18 +19,17 @@ if (isset($_SESSION['user_id']) && isset($conn)) {
 $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 ?>
 
-<!-- Mobile Overlay -->
 <div class="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <aside class="sidebar" id="adminSidebar">
 
-  <div class="sb-logo">
-    <div class="sb-logo-icon"><i class="bi bi-person-fill" style="color: #ffffff;"></i></div>
+  <a href="admin_dashboard.php" class="sb-logo">
+    <div class="sb-logo-icon"><i class="fas fa-user-shield" style="color: #ffffff;"></i></div>
     <div>
       <div class="sb-logo-text">Admin Panel</div>
       <div class="sb-logo-sub">Control Center</div>
     </div>
-  </div>
+  </a>
 
   <nav class="sb-nav">
     <div class="sb-label">การจัดการระบบ</div>
@@ -85,7 +84,7 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
         <i class="fas fa-arrow-right-arrow-left"></i>
       </span>
       <span style="color:var(--g600);font-weight:600;">ไปหน้าผู้ใช้</span>
-      <i class="fas fa-external-link" style="margin-left:auto;font-size:.65rem;color:var(--g400);"></i>
+      <i class="fas fa-external-link-alt" style="margin-left:auto;font-size:.65rem;color:var(--g400);"></i>
     </a>
   </nav>
 
@@ -95,9 +94,9 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
       <div class="sb-un">
         <?= htmlspecialchars($sb_admin_fname . ' ' . $sb_admin_lname) ?>
       </div>
-      <div style="font-size:.65rem; color:var(--muted); font-family: 'Kanit', sans-serif;">ผู้ดูแลระบบ</div>
+      <div style="font-size:.7rem; color:var(--muted); font-family: 'Kanit', sans-serif;">ผู้ดูแลระบบ</div>
     </div>
-    <a href="../pages/logout.php" title="ออกจากระบบ" style="margin-left:auto; width:32px; height:32px; border-radius:8px; border:1px solid var(--g200); display:flex; align-items:center; justify-content:center; color:var(--g600); text-decoration:none; font-size:.7rem; transition:all .18s;">
+    <a href="../pages/logout.php" title="ออกจากระบบ" style="margin-left:auto; width:34px; height:34px; border-radius:10px; border:1px solid var(--g200); background:#fff; display:flex; align-items:center; justify-content:center; color:var(--g600); text-decoration:none; font-size:.8rem; transition:all .2s;">
       <i class="fas fa-sign-out-alt"></i>
     </a>
   </div>
@@ -122,9 +121,10 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   flex-direction: column;
   position: fixed;
   left: 0; top: 0; bottom: 0;
-  z-index: 100;
+  z-index: 1050; /* อัปเกรด z-index เพื่อไม่ให้โดน topbar ทับเวลาจอมือถือ */
   box-shadow: 4px 0 24px rgba(34,197,94,.06);
   transition: transform .3s ease;
+  font-family: 'Kanit', sans-serif !important; /* ล็อคฟอนต์ไม่ให้เพี้ยน */
 }
 
 .sidebar-overlay {
@@ -132,17 +132,24 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.5);
-  z-index: 99;
+  backdrop-filter: blur(3px);
+  z-index: 1040; /* ให้อยู่ใต้ sidebar แตทับเว็บทั้งหมด */
   opacity: 0;
   transition: opacity .3s ease;
 }
 
+/* ปรับ Admin Panel ให้เป็นลิงก์กดได้ */
 .sb-logo { 
   padding: 24px 22px 20px; 
   border-bottom: 1px solid #e5ede6; 
   display: flex; 
   align-items: center; 
   gap: 11px; 
+  text-decoration: none !important;
+  transition: background 0.2s ease;
+}
+.sb-logo:hover {
+  background: var(--g50);
 }
 
 .sb-logo-icon {
@@ -151,37 +158,43 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   display: flex; align-items: center; justify-content: center;
   font-size: 1.2rem; box-shadow: 0 4px 12px rgba(34,197,94,.35);
   flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.sb-logo:hover .sb-logo-icon {
+  transform: scale(1.05);
 }
 
 .sb-logo-text { 
-  font-family: 'Nunito',sans-serif; 
-  font-size: 1.18rem; 
-  font-weight: 800; 
+  font-family: 'Nunito', sans-serif !important; 
+  font-size: 1.18rem !important; 
+  font-weight: 800 !important; 
   color: var(--g700); 
   letter-spacing: -.02em; 
   line-height: 1; 
 }
 
 .sb-logo-sub {
-  font-size: .7rem;
+  font-family: 'Kanit', sans-serif !important;
+  font-size: 0.75rem !important;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .sb-label {
-  font-size: .7rem;
-  font-weight: 700;
+  font-family: 'Kanit', sans-serif !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: .05em;
-  padding: 12px 14px 6px;
+  padding: 14px 14px 6px;
 }
 
 .sb-nav { 
-  padding: 6px 12px; 
+  padding: 8px 12px; 
   display: flex; 
   flex-direction: column; 
-  gap: 2px; 
+  gap: 4px; 
   flex: 1; 
   overflow-y: auto; 
 }
@@ -189,14 +202,15 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 .nav-item { 
   display: flex; 
   align-items: center; 
-  gap: 11px; 
-  padding: 11px 14px; 
+  gap: 12px; 
+  padding: 10px 14px; 
   border-radius: 12px; 
-  text-decoration: none; 
+  text-decoration: none !important; 
   color: var(--sub); 
-  font-size: .82rem; 
-  font-weight: 500; 
-  transition: all .18s; 
+  font-family: 'Kanit', sans-serif !important;
+  font-size: 0.95rem !important; /* ล็อคขนาดฟอนต์เมนูให้เท่ากันทุกหน้า */
+  font-weight: 500 !important; 
+  transition: all .2s; 
 }
 
 .nav-item span:not(.ni) {
@@ -211,20 +225,21 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 .nav-item.active { 
   background: var(--g50); 
   color: var(--g600); 
-  font-weight: 600; 
+  font-weight: 600 !important; 
 }
 
 .nav-item.active .ni { 
   background: var(--g600); 
   color: #fff; 
   border-color: var(--g600); 
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
 }
 
 .ni {
   width: 34px; height: 34px; border-radius: 10px;
   background: var(--g50); border: 1px solid var(--g200);
   display: flex; align-items: center; justify-content: center;
-  font-size: .8rem; flex-shrink: 0; transition: all .18s; color: var(--g600);
+  font-size: 0.85rem !important; flex-shrink: 0; transition: all .2s; color: var(--g600);
 }
 
 .nav-item:hover .ni { 
@@ -237,31 +252,39 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   background: var(--g50); 
   display: flex; 
   align-items: center; 
-  gap: 11px; 
+  gap: 12px; 
 }
 
 .sb-av {
-  width: 38px; height: 38px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 50%;
   background: linear-gradient(135deg, var(--g500), var(--t500));
   display: flex; align-items: center; justify-content: center;
-  font-size: .82rem; font-weight: 800; color: #fff;
+  font-size: 0.9rem !important; font-weight: 800 !important; color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(34,197,94,.25);
 }
 
 .sb-divider { 
   height: 1px; 
   background: #e5ede6; 
-  margin: 6px 12px; 
+  margin: 8px 12px; 
 }
 
 .sb-un {
   font-family: 'Kanit', sans-serif !important; 
-  font-size: .78rem !important; 
+  font-size: 0.85rem !important; 
   font-weight: 600 !important; 
   color: var(--g700); 
   white-space: nowrap; 
   overflow: hidden; 
   text-overflow: ellipsis; 
+}
+
+/* เอฟเฟกต์ปุ่ม Logout */
+.sb-user a:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
 }
 
 /* Mobile Styles */
@@ -272,7 +295,6 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   
   .sidebar.open {
     transform: translateX(0);
-    z-index: 101;
   }
   
   .sidebar-overlay.show {
@@ -305,7 +327,7 @@ function closeSidebar() {
   overlay.classList.remove('show');
 }
 
-// Close sidebar when clicking a link on mobile
+// Close sidebar when clicking a link on mobile (ป้องกันกดเมนูแล้ว sidebar ค้าง)
 document.addEventListener('DOMContentLoaded', function() {
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(item => {
