@@ -1,9 +1,7 @@
 <?php
 // sidebar_admin.php
-// ตรวจสอบชื่อหน้าปัจจุบันเพื่อทำสถานะ Active
 $current_page = basename($_SERVER['PHP_SELF']);
 
-// 1. ให้ Sidebar Admin ดึงชื่อผู้ใช้จริงเช่นเดียวกัน
 $sb_admin_fname = "Admin";
 $sb_admin_lname = "";
 
@@ -20,7 +18,11 @@ if (isset($_SESSION['user_id']) && isset($conn)) {
 }
 $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 ?>
-<aside class="sidebar">
+
+<!-- Mobile Overlay -->
+<div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="adminSidebar">
 
   <div class="sb-logo">
     <div class="sb-logo-icon"><i class="bi bi-person-fill" style="color: #ffffff;"></i></div>
@@ -51,6 +53,11 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
     <a href="admin_ingredients.php" class="nav-item <?php echo ($current_page === 'admin_ingredients.php') ? 'active' : ''; ?>">
       <span class="ni"><i class="fas fa-carrot"></i></span>
       <span>จัดการวัตถุดิบ</span>
+    </a>
+
+    <a href="admin_health_data.php" class="nav-item <?php echo ($current_page === 'admin_health_data.php') ? 'active' : ''; ?>">
+      <span class="ni"><i class="fas fa-heartbeat"></i></span>
+      <span>โรคและอาหารแพ้</span>
     </a>
 
     <a href="admin_chat_logs.php" class="nav-item <?php echo ($current_page === 'admin_chat_logs.php') ? 'active' : ''; ?>">
@@ -98,12 +105,12 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 </aside>
 
 <style>
-/* CSS สำหรับ Admin Sidebar โทนสีเขียว */
 :root {
-  --g50: #f0fdf4; --g100: #dcfce7; --g200: #bbf7d0;
+  --g50: #f0fdf4; --g100: #dcfce7; --g200: #bbf7d0; --g300:#86efac;
   --g500: #22c55e; --g600: #16a34a; --g700: #15803d;
   --t500: #14b8a6;
   --sb-w: 260px;
+  --sub: #4b6b4e; --muted: #8da98f;
 }
 
 .sidebar {
@@ -117,28 +124,101 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   left: 0; top: 0; bottom: 0;
   z-index: 100;
   box-shadow: 4px 0 24px rgba(34,197,94,.06);
+  transition: transform .3s ease;
 }
 
-.sb-logo { padding: 24px 22px 20px; border-bottom: 1px solid #e5ede6; display: flex; align-items: center; gap: 11px; }
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
 
-/* เปลี่ยนสี Logo Icon เป็นเขียว-ฟ้า Gradient ตามหน้าบ้าน */
+.sb-logo { 
+  padding: 24px 22px 20px; 
+  border-bottom: 1px solid #e5ede6; 
+  display: flex; 
+  align-items: center; 
+  gap: 11px; 
+}
+
 .sb-logo-icon {
   width: 44px; height: 44px; border-radius: 12px;
   background: linear-gradient(135deg, var(--g500), var(--t500));
   display: flex; align-items: center; justify-content: center;
   font-size: 1.2rem; box-shadow: 0 4px 12px rgba(34,197,94,.35);
+  flex-shrink: 0;
 }
 
-.sb-logo-text { font-family: 'Nunito',sans-serif; font-size: 1.18rem; font-weight: 800; color: var(--g700); letter-spacing: -.02em; line-height: 1; }
+.sb-logo-text { 
+  font-family: 'Nunito',sans-serif; 
+  font-size: 1.18rem; 
+  font-weight: 800; 
+  color: var(--g700); 
+  letter-spacing: -.02em; 
+  line-height: 1; 
+}
 
-.sb-nav { padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+.sb-logo-sub {
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
 
-.nav-item { display: flex; align-items: center; gap: 11px; padding: 11px 14px; border-radius: 12px; text-decoration: none; color: var(--sub); font-size: .82rem; font-weight: 500; transition: all .18s; }
+.sb-label {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: 12px 14px 6px;
+}
 
-/* Hover และ Active เปลี่ยนเป็นสีเขียว */
-.nav-item:hover { background: var(--g50); color: var(--g600); }
-.nav-item.active { background: var(--g50); color: var(--g600); font-weight: 600; }
-.nav-item.active .ni { background: var(--g600); color: #fff; border-color: var(--g600); }
+.sb-nav { 
+  padding: 6px 12px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 2px; 
+  flex: 1; 
+  overflow-y: auto; 
+}
+
+.nav-item { 
+  display: flex; 
+  align-items: center; 
+  gap: 11px; 
+  padding: 11px 14px; 
+  border-radius: 12px; 
+  text-decoration: none; 
+  color: var(--sub); 
+  font-size: .82rem; 
+  font-weight: 500; 
+  transition: all .18s; 
+}
+
+.nav-item span:not(.ni) {
+  white-space: nowrap;
+}
+
+.nav-item:hover { 
+  background: var(--g50); 
+  color: var(--g600); 
+}
+
+.nav-item.active { 
+  background: var(--g50); 
+  color: var(--g600); 
+  font-weight: 600; 
+}
+
+.nav-item.active .ni { 
+  background: var(--g600); 
+  color: #fff; 
+  border-color: var(--g600); 
+}
 
 .ni {
   width: 34px; height: 34px; border-radius: 10px;
@@ -146,18 +226,34 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   display: flex; align-items: center; justify-content: center;
   font-size: .8rem; flex-shrink: 0; transition: all .18s; color: var(--g600);
 }
-.nav-item:hover .ni { background: var(--g100); }
 
-.sb-user { border-top: 1px solid #e5ede6; padding: 16px; background: var(--g50); display: flex; align-items: center; gap: 11px; }
+.nav-item:hover .ni { 
+  background: var(--g100); 
+}
+
+.sb-user { 
+  border-top: 1px solid #e5ede6; 
+  padding: 16px; 
+  background: var(--g50); 
+  display: flex; 
+  align-items: center; 
+  gap: 11px; 
+}
+
 .sb-av {
   width: 38px; height: 38px; border-radius: 50%;
   background: linear-gradient(135deg, var(--g500), var(--t500));
   display: flex; align-items: center; justify-content: center;
   font-size: .82rem; font-weight: 800; color: #fff;
+  flex-shrink: 0;
 }
-.sb-divider { height: 1px; background: #e5ede6; margin: 6px 12px; }
 
-/* ล็อคฟอนต์และการตั้งค่าให้ชื่อผู้ใช้ไม่กระโดดตามหน้า */
+.sb-divider { 
+  height: 1px; 
+  background: #e5ede6; 
+  margin: 6px 12px; 
+}
+
 .sb-un {
   font-family: 'Kanit', sans-serif !important; 
   font-size: .78rem !important; 
@@ -167,4 +263,57 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   overflow: hidden; 
   text-overflow: ellipsis; 
 }
+
+/* Mobile Styles */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+    z-index: 101;
+  }
+  
+  .sidebar-overlay.show {
+    display: block;
+    opacity: 1;
+  }
+}
+
+@media (min-width: 1025px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
 </style>
+
+<script>
+function toggleSidebar() {
+  const sidebar = document.getElementById('adminSidebar');
+  const overlay = document.querySelector('.sidebar-overlay');
+  
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById('adminSidebar');
+  const overlay = document.querySelector('.sidebar-overlay');
+  
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+}
+
+// Close sidebar when clicking a link on mobile
+document.addEventListener('DOMContentLoaded', function() {
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.addEventListener('click', function() {
+      if (window.innerWidth <= 1024) {
+        closeSidebar();
+      }
+    });
+  });
+});
+</script>
