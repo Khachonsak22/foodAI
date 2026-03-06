@@ -88,7 +88,6 @@ $table_counts = [
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
 :root{--g50:#f0fdf4;--g200:#bbf7d0;--g500:#22c55e;--g600:#16a34a;--bg:#f5f8f5;--bdr:#e8f0e9;--txt:#1a2e1a;--sub:#4b6b4e;--muted:#8da98f;--sb-w:260px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -106,11 +105,31 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .ni{width:34px;height:34px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#dc2626;}
 .page-wrap{margin-left:var(--sb-w);flex:1;position:relative;z-index:1;min-width:0;}
 .topbar{height:66px;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid #e5ede6;display:flex;align-items:center;padding:0 2.5rem;gap:14px;position:sticky;top:0;z-index:50;}
-.card{background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:22px;margin-bottom:20px;}
+.card{background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:22px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.02);}
 .setting-item{padding:18px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;gap:20px;}
 .setting-item:last-child{border-bottom:none;}
-.btn{padding:8px 16px;border-radius:10px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;}
+.btn{padding:8px 16px;border-radius:10px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
+.btn:hover{filter:brightness(0.95);}
 .hamburger{display:none;width:40px;height:40px;border-radius:10px;background:#fff;border:1.5px solid var(--bdr);align-items:center;justify-content:center;cursor:pointer;}
+
+/* Custom input style สำหรับฟอร์ม */
+.custom-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--bdr);
+    border-radius: 10px;
+    font-size: .88rem;
+    font-family: 'Kanit', sans-serif;
+    outline: none;
+    background: #fdfdfd;
+    transition: all 0.2s;
+}
+.custom-input:focus {
+    border-color: var(--g500);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
 @media (max-width: 1024px){
   .sidebar{width:70px;}
   .sb-logo-text,.nav-item span:not(.ni){display:none;}
@@ -127,47 +146,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   .card{padding:16px;}
   .setting-item{flex-direction:column;align-items:flex-start;}
 }
-
-/* ปรับแต่งการ์ดให้ดูนุ่มนวลขึ้น */
-    .setting-card {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    /* ตกแต่งส่วนหัวของการ์ด */
-    .setting-card .card-header {
-        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
-        border-bottom: none;
-    }
-
-    /* ตกแต่งช่องกรอกข้อมูล (Input & Select) */
-    .custom-input {
-        border: 2px solid #e9ecef;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        background-color: #f8f9fa;
-    }
-
-    /* เอฟเฟกต์ตอนคลิกที่ช่องกรอก */
-    .custom-input:focus {
-        border-color: #0d6efd;
-        background-color: #ffffff;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-    }
-
-    /* ตกแต่งปุ่มบันทึก */
-    .btn-save {
-        border-radius: 8px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-    }
-
-    /* เอฟเฟกต์ตอนเอาเมาส์ชี้ปุ่ม */
-    .btn-save:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-    }
 </style>
 </head>
 <body>
@@ -242,47 +220,42 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       </div>
     </div>
     
-    <div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm border-0 setting-card">
-                <div class="card-header bg-primary text-white py-3">
-                    <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>ตั้งค่าการเชื่อมต่อ AI (API Settings)</h5>
-                </div>
-                <div class="card-body p-4">
-                    
-                    <form method="POST" action="">
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-secondary">Google Gemini API Key:</label>
-                            <input type="text" name="api_key" class="form-control form-control-lg custom-input" value="<?php echo htmlspecialchars($setting['api_key']); ?>" placeholder="AIzaSyA..." required>
-                            <div class="form-text text-muted mt-2">
-                                * กรุณาเก็บรหัสนี้เป็นความลับและห้ามเปิดเผยให้ผู้อื่นทราบ
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-secondary">AI Model (รุ่นของสมองกล):</label>
-                            <select name="api_model" class="form-select form-select-lg custom-input" required>
-                                <option value="gemini-2.5-flash" <?php if($setting['api_model'] == 'gemini-2.5-flash') echo 'selected'; ?>>Gemini 2.5 Flash (แนะนำ - รวดเร็วและฉลาดที่สุด)</option>
-                                <option value="gemini-2.0-flash" <?php if($setting['api_model'] == 'gemini-2.0-flash') echo 'selected'; ?>>Gemini 2.0 Flash (เสถียร)</option>
-                                <option value="gemini-1.5-flash" <?php if($setting['api_model'] == 'gemini-1.5-flash') echo 'selected'; ?>>Gemini 1.5 Flash (รุ่นเก่า)</option>
-                            </select>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <button type="submit" name="save_api_settings" class="btn btn-primary btn-lg px-5 btn-save">
-                                <i class="fas fa-save me-2"></i> บันทึกการตั้งค่า
-                            </button>
-                        </div>
-                    </form>
-
-                </div>
+    <div class="card">
+      <h2 style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:16px;color:var(--g600);"><i class="fas fa-robot me-2"></i> API Settings</h2>
+      
+      <form method="POST" action="">
+        <div class="setting-item" style="flex-direction: column; align-items: stretch; gap: 16px;">
+          
+          <div>
+            <label style="font-size:.88rem;font-weight:600;display:block;margin-bottom:6px;">Google Gemini API Key:</label>
+            <div style="position: relative;">
+              <input type="password" id="api_key_input" name="api_key" class="custom-input" value="<?php echo htmlspecialchars($setting['api_key']); ?>" placeholder="AIzaSyA..." required style="padding-right: 45px;">
+              
+              <button type="button" onclick="toggleApiKey()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1rem; padding: 0;">
+                <i class="fas fa-eye" id="toggle_eye_icon"></i>
+              </button>
             </div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:6px;">* กรุณาเก็บรหัสนี้เป็นความลับและห้ามเปิดเผยให้ผู้อื่นทราบ</div>
+          </div>
+
+          <div>
+            <label style="font-size:.88rem;font-weight:600;display:block;margin-bottom:6px;">AI Model (รุ่นของสมองกล):</label>
+            <select name="api_model" class="custom-input" required>
+                <option value="gemini-2.5-flash" <?php if($setting['api_model'] == 'gemini-2.5-flash') echo 'selected'; ?>>Gemini 2.5 Flash (แนะนำ - รวดเร็วและฉลาดที่สุด)</option>
+                <option value="gemini-2.0-flash" <?php if($setting['api_model'] == 'gemini-2.0-flash') echo 'selected'; ?>>Gemini 2.0 Flash (เสถียร)</option>
+                <option value="gemini-1.5-flash" <?php if($setting['api_model'] == 'gemini-1.5-flash') echo 'selected'; ?>>Gemini 1.5 Flash (รุ่นเก่า)</option>
+            </select>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+            <button type="submit" name="save_api_settings" class="btn" style="background:var(--g500);color:#fff;padding:10px 24px;">
+              <i class="fas fa-save"></i> บันทึกการตั้งค่า
+            </button>
+          </div>
+
         </div>
+      </form>
     </div>
-</div>
     
     <div class="card" style="border-color:#fecaca;">
       <h2 style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:16px;color:#dc2626;">⚠️ Danger Zone</h2>
@@ -306,5 +279,22 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     </div>
   </main>
 </div>
+
+<script>
+function toggleApiKey() {
+    var input = document.getElementById("api_key_input");
+    var icon = document.getElementById("toggle_eye_icon");
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+    } else {
+        input.type = "password";
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
+    }
+}
+</script>
+
 </body>
 </html>
