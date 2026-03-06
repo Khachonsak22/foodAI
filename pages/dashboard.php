@@ -843,7 +843,7 @@ main {
                     <i class="fas fa-external-link-alt" style="font-size:.65rem;color:var(--g500);margin-left:6px;"></i>
                     <?php endif; ?>
                   </h4>
-                  <span class="badge-green">🔥 <?php echo number_format($menu['calories']); ?> kcal</span>
+                  <span class="badge-green"><i class="bi bi-fire" style="color: #ff5722;"></i> <?php echo number_format($menu['calories']); ?> kcal</span>
                 </div>
                 <p style="font-size:.72rem;color:var(--muted);margin-top:5px;line-height:1.6;">
                   <?php echo htmlspecialchars(mb_strimwidth($menu['description']??'',0,95,'…')); ?>
