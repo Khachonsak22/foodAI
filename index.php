@@ -556,7 +556,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
         </p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon"><i class="bi bi-phone" style="color: #fff23b;"></i></div>
+        <div class="feature-icon"><i class="fa-jelly fa-regular fa-mobile" style="color: #fff23b;"></i></div>
         <h3 class="feature-title">ใช้งานง่าย</h3>
         <p class="feature-desc">
           Interface สวยงาม ใช้งานสะดวก รองรับทุกอุปกรณ์
