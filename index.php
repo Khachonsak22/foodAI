@@ -468,7 +468,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
         </div>
         <h1 class="hero-title">
           ผู้ช่วยวางแผน<br>
-          <span class="highlight">อาหารอัจฉริยะ</span><br>
+          <span class="highlight">อาหารอัจฉริยะ</span><br><br>
           เพื่อสุขภาพที่ดี
         </h1>
         <p class="hero-subtitle">
