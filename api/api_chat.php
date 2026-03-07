@@ -148,25 +148,25 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
 $response = curl_exec($ch);
+// รับ HTTP Code เพื่อเช็คสถานะการเชื่อมต่อ
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 $responseData = json_decode($response, true);
 
+// เพิ่มการเช็ค Http Code เพื่อป้องกัน API เอ๋อแล้วเงียบหาย
 if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     $rawText = $responseData['candidates'][0]['content']['parts'][0]['text'];
     
-    // ดึงเฉพาะข้อมูล JSON เท่านั้น เพื่อป้องกัน Error จากคำพูดส่วนเกินของ AI
-    $cleanJson = '';
-    if (preg_match('/\{.*\}/s', $rawText, $matches)) {
-        $cleanJson = $matches[0];
-    } else {
-        $cleanJson = $rawText;
-    }
-    
+    // Clean JSON string
+    $cleanJson = str_replace(['```json', '```'], '', $rawText);
     $parsedData = json_decode($cleanJson, true);
+
     if (!$parsedData) {
-        $parsedData = ["chat_response" => "ขออภัยค่ะ ฉันไม่สามารถจัดรูปแบบข้อมูลได้ กรุณาลองใหม่อีกครั้ง", "recommended_menus" => []];
+        $parsedData = [
+            "chat_response" => $rawText,
+            "recommended_menus" => []
+        ];
     }
 
     if ($userId > 0) {
@@ -201,8 +201,8 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
             // นำปุ่มแนบต่อท้ายข้อความแชท
             $parsedData['chat_response'] .= $htmlButtons;
         }
-
-        // บันทึกประวัติแชทลงฐานข้อมูล (จะบันทึกปุ่มลงไปด้วยเพื่อให้โหลดแชทเก่าแล้วยังกดได้)
+        
+        // 2. บันทึกประวัติแชทลง chat_logs โดยใช้ |||MENUS||| เป็นตัวแบ่ง เพื่อให้หน้าเว็บดึงไปสร้างปุ่มได้
         $finalMessageToSave = $parsedData['chat_response'];
         if (!empty($menusToSave)) {
             $finalMessageToSave .= '|||MENUS|||' . json_encode($menusToSave, JSON_UNESCAPED_UNICODE);
@@ -215,6 +215,7 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
 
     echo json_encode($parsedData);
 } else {
+    // ส่ง Error ให้ฝั่งหน้าเว็บทราบชัดเจน
     $error_msg = isset($responseData['error']['message']) ? $responseData['error']['message'] : 'ระบบ AI ขัดข้องชั่วคราว (HTTP '.$httpcode.')';
     echo json_encode([
         'chat_response' => 'ขออภัยค่ะ มีข้อผิดพลาดจากเซิร์ฟเวอร์ AI: ' . $error_msg, 
