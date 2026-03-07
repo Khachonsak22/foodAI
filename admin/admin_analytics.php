@@ -104,9 +104,7 @@ $active_trend = $conn->query("
 
 <div class="page-wrap">
     <header class="topbar h-[66px] bg-white/95 backdrop-blur-md border-b border-[#e5ede6] flex items-center px-6 sticky top-0 z-50">
-        <button class="lg:hidden mr-4" onclick="document.querySelector('.sidebar').classList.toggle('open')">
-            <i class="fas fa-bars"></i>
-        </button>
+        <button class="hamburger"><i class="fas fa-bars"></i></button>
         <div>
             <h1 class="font-extrabold text-lg leading-tight">Analytics Dashboard</h1>
             <p class="text-xs text-gray-500">สถิติและวิเคราะห์ระบบ</p>

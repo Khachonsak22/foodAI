@@ -228,6 +228,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 <div class="page-wrap">
   <header class="topbar">
+    <button class="hamburger"><i class="fas fa-bars"></i></button>
     <div style="flex:1;">
       <div style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;color:var(--txt);">จัดการสูตรอาหาร</div>
       <div style="font-size:.72rem;color:var(--muted);">ทั้งหมด <?= number_format($total) ?> รายการ</div>
