@@ -115,20 +115,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .page-btn:hover{background:var(--g50);}
 .page-btn.active{background:var(--g500);color:#fff;}
 .hamburger{display:none;width:40px;height:40px;border-radius:10px;background:#fff;border:1.5px solid var(--bdr);align-items:center;justify-content:center;cursor:pointer;}
-@media (max-width: 1024px){
-  .sidebar{width:70px;}
-  .sb-logo-text,.nav-item span:not(.ni){display:none;}
-  .sb-logo{justify-content:center;padding:20px 10px;}
-  .nav-item{justify-content:center;padding:10px;}
-  .page-wrap{margin-left:70px;}
-}
-@media (max-width: 768px){
-  .hamburger{display:flex;}
-  .sidebar{transform:translateX(-100%);width:var(--sb-w);transition:transform .3s;}
-  .sidebar.open{transform:translateX(0);}
+@media (max-width:1024px){
   .page-wrap{margin-left:0;}
-  .topbar{padding:0 1rem;height:60px;}
-  .card{padding:16px;}
+  .hamburger{display:flex;}
+}
+@media (max-width:768px){
+  .topbar{padding:0 1rem;}
+  main{padding:1.5rem 1rem;}
+  .card-header-custom{flex-direction:column;gap:1rem;align-items:flex-start;}
 }
 </style>
 </head>

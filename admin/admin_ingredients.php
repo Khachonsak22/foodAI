@@ -150,6 +150,16 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .dt-buttons{margin-bottom:12px;}
 .dt-button{background:var(--g500)!important;color:#fff!important;border:none!important;padding:8px 16px!important;border-radius:8px!important;}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
+
+@media (max-width:1024px){
+  .page-wrap{margin-left:0;}
+  .hamburger{display:flex;}
+}
+@media (max-width:768px){
+  .topbar{padding:0 1rem;}
+  main{padding:1.5rem 1rem;}
+  .card-header-custom{flex-direction:column;gap:1rem;align-items:flex-start;}
+}
 </style>
 </head>
 <body>

@@ -202,6 +202,16 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .tag-label.disease { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
 .tag-label.allergy { background: #eff6ff; border-color: #bae6fd; color: #0284c7; }
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
+
+@media (max-width:1024px){
+  .page-wrap{margin-left:0;}
+  .hamburger{display:flex;}
+}
+@media (max-width:768px){
+  .topbar{padding:0 1rem;}
+  main{padding:1.5rem 1rem;}
+  .card-header-custom{flex-direction:column;gap:1rem;align-items:flex-start;}
+}
 </style>
 </head>
 <body>
