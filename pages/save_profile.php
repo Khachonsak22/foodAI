@@ -46,7 +46,7 @@ switch ($activity) {
 }
 $tdee = $bmr * $activity_multiplier;
 
-// 4. 💥 ดึง "ค่าปรับแคลอรี่" (cal_adjust) จากตาราง goals
+// 4.ดึง "ค่าปรับแคลอรี่" (cal_adjust) จากตาราง goals
 $cal_adjust = 0;
 $goal_stmt = $conn->prepare("SELECT cal_adjust FROM goals WHERE goal_key = ?");
 $goal_stmt->bind_param("s", $goal);
