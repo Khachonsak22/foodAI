@@ -106,10 +106,10 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 {
   \"chat_response\": \"ข้อความอธิบายว่าทำไมถึงเลือกเมนูเหล่านี้ ปลอดภัยต่อโรคประจำตัวหรืออาหารที่แพ้อย่างไร (สามารถใช้ Markdown ตกแต่งข้อความได้)\",
   \"recommended_menus\": [
-    { \"name\": \"ชื่อเมนูอาหารเพียวๆ\", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนูอาหารเพียวๆ\", \"calories\": 500, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนูอาหารเพียวๆ\", \"calories\": 150, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนูอาหารเพียวๆ\", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" }
+    { \"name\": \"ชื่อเมนู 1 \", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนู 2 \", \"Menu_Desc\": 500, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนู 3 \", \"calories\": 150, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนู 4 \", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" }
   ]
 }
 หมายเหตุ: ถ้าผู้ใช้แค่ชวนคุยทั่วไป ไม่ได้ขอเมนู ให้ปล่อย recommended_menus เป็นอาเรย์ว่าง []
@@ -130,7 +130,7 @@ if ($setting_stmt && $setting_stmt->num_rows > 0) {
 }
 
 // เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
-$url = "[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){$apiModel}:generateContent?key=" . $apiKey;
+$url = "https://generativelanguage.googleapis.com/v1beta/models/{$apiModel}:generateContent?key=" . $apiKey;
 
 // 4. จัดรูปแบบข้อมูล (ล็อกคอเป็น JSON เพื่อความเสถียร)
 $data = [
@@ -172,7 +172,19 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
     if ($userId > 0) {
         $menusToSave = $parsedData['recommended_menus'] ?? [];
         
-        // บันทึกประวัติแชทลง chat_logs โดยใช้ |||MENUS||| เป็นตัวแบ่ง เพื่อให้หน้าเว็บดึงไปสร้างปุ่มได้
+        // 1. บันทึกเมนูลงตาราง ai_saved_menus อัตโนมัติ (เพื่อให้ไปโผล่ในหน้า meal_log ทันที)
+        // if (!empty($menusToSave)) {
+        //     $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
+        //     foreach ($menusToSave as $m) {
+        //         $mName = $m['name'] ?? 'เมนูอาหาร';
+        //         $mCal = (int)($m['calories'] ?? 0);
+        //         $mDesc = $m['desc'] ?? '';
+        //         $ins_menu_stmt->bind_param("isis", $userId, $mName, $mCal, $mDesc);
+        //         $ins_menu_stmt->execute();
+        //     }
+        // }
+        
+        // 2. บันทึกประวัติแชทลง chat_logs โดยใช้ |||MENUS||| เป็นตัวแบ่ง เพื่อให้หน้าเว็บดึงไปสร้างปุ่มได้
         $finalMessageToSave = $parsedData['chat_response'];
         if (!empty($menusToSave)) {
             $finalMessageToSave .= '|||MENUS|||' . json_encode($menusToSave, JSON_UNESCAPED_UNICODE);
