@@ -203,17 +203,22 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
           <p style="font-size:.75rem; color:var(--muted); margin-bottom:16px;">เลือกแท็กเพื่อให้ระบบจับคู่และคัดกรองเมนูให้ผู้ใช้อย่างแม่นยำ</p>
           
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            
             <div style="background: #fff; border: 1px solid #d1fae5; border-radius: 16px; padding: 18px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.05);">
                 <div style="font-family:'Nunito', sans-serif; font-weight:800; font-size:1rem; color:#059669; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
                     <div style="width:32px; height:32px; border-radius:10px; background:#d1fae5; display:flex; align-items:center; justify-content:center; font-size:1rem;">
                         <i class="fas fa-heartbeat"></i>
                     </div>
-                    เหมาะสำหรับโรค
+                    เหมาะสำหรับโรคประจำตัว
                 </div>
                 <div class="tag-checkbox-group">
                     <?php foreach($tags_list as $t):
-                        // ข้ามแท็กที่มีคำว่า 'ไม่มี' ไป เพราะเป็นสารก่อภูมิแพ้
-                        if (mb_strpos($t['name'], 'ไม่มี') === 0) continue; 
+                        $name_check = mb_strtolower($t['name'], 'UTF-8');
+                        // เช็คคีย์เวิร์ดที่เกี่ยวกับการแพ้อาหาร
+                        $is_allergy = (mb_strpos($name_check, 'แพ้') !== false || mb_strpos($name_check, 'ไม่มี') !== false || mb_strpos($name_check, 'ปราศจาก') !== false || mb_strpos($name_check, 'free') !== false);
+                        
+                        // ถ้าเป็นแท็กเกี่ยวกับการแพ้ ให้ข้ามไปกล่องที่ 2
+                        if ($is_allergy) continue; 
                     ?>
                       <label class="tag-label disease">
                         <input type="checkbox" name="tags[]" value="<?= $t['id'] ?>" style="accent-color: #059669;">
@@ -228,12 +233,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
                     <div style="width:32px; height:32px; border-radius:10px; background:#e0f2fe; display:flex; align-items:center; justify-content:center; font-size:1rem;">
                         <i class="fas fa-ban"></i>
                     </div>
-                    ปราศจากสิ่งที่แพ้
+                    สิ่งที่แพ้ / ปราศจากสารภูมิแพ้
                 </div>
                 <div class="tag-checkbox-group">
                     <?php foreach($tags_list as $t):
-                        // ดึงมาแสดงเฉพาะแท็กที่ขึ้นต้นด้วย 'ไม่มี'
-                        if (mb_strpos($t['name'], 'ไม่มี') !== 0) continue; 
+                        $name_check = mb_strtolower($t['name'], 'UTF-8');
+                        $is_allergy = (mb_strpos($name_check, 'แพ้') !== false || mb_strpos($name_check, 'ไม่มี') !== false || mb_strpos($name_check, 'ปราศจาก') !== false || mb_strpos($name_check, 'free') !== false);
+                        
+                        // ดึงมาแสดงเฉพาะแท็กที่เกี่ยวกับการแพ้อาหาร
+                        if (!$is_allergy) continue; 
                     ?>
                       <label class="tag-label allergy">
                         <input type="checkbox" name="tags[]" value="<?= $t['id'] ?>" style="accent-color: #0284c7;">
@@ -242,6 +250,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
                     <?php endforeach; ?>
                 </div>
             </div>
+
           </div>
         </div>
 
