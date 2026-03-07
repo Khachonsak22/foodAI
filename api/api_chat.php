@@ -148,43 +148,61 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
 $response = curl_exec($ch);
-// รับ HTTP Code เพื่อเช็คสถานะการเชื่อมต่อ
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 $responseData = json_decode($response, true);
 
-// เพิ่มการเช็ค Http Code เพื่อป้องกัน API เอ๋อแล้วเงียบหาย
 if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     $rawText = $responseData['candidates'][0]['content']['parts'][0]['text'];
     
-    // Clean JSON string
-    $cleanJson = str_replace(['```json', '```'], '', $rawText);
+    // ดึงเฉพาะข้อมูล JSON เท่านั้น เพื่อป้องกัน Error จากคำพูดส่วนเกินของ AI
+    $cleanJson = '';
+    if (preg_match('/\{.*\}/s', $rawText, $matches)) {
+        $cleanJson = $matches[0];
+    } else {
+        $cleanJson = $rawText;
+    }
+    
     $parsedData = json_decode($cleanJson, true);
-
     if (!$parsedData) {
-        $parsedData = [
-            "chat_response" => $rawText,
-            "recommended_menus" => []
-        ];
+        $parsedData = ["chat_response" => "ขออภัยค่ะ ฉันไม่สามารถจัดรูปแบบข้อมูลได้ กรุณาลองใหม่อีกครั้ง", "recommended_menus" => []];
     }
 
     if ($userId > 0) {
         $menusToSave = $parsedData['recommended_menus'] ?? [];
         
-        // 1. บันทึกเมนูลงตาราง ai_saved_menus อัตโนมัติ (เพื่อให้ไปโผล่ในหน้า meal_log ทันที)
-        // if (!empty($menusToSave)) {
-        //     $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
-        //     foreach ($menusToSave as $m) {
-        //         $mName = $m['name'] ?? 'เมนูอาหาร';
-        //         $mCal = (int)($m['calories'] ?? 0);
-        //         $mDesc = $m['desc'] ?? '';
-        //         $ins_menu_stmt->bind_param("isis", $userId, $mName, $mCal, $mDesc);
-        //         $ins_menu_stmt->execute();
-        //     }
-        // }
-        
-        // 2. บันทึกประวัติแชทลง chat_logs โดยใช้ |||MENUS||| เป็นตัวแบ่ง เพื่อให้หน้าเว็บดึงไปสร้างปุ่มได้
+        // ── สร้างปุ่มคลิกบันทึก ฝังไปในแชทให้ผู้ใช้กดเอง ──
+        if (!empty($menusToSave)) {
+            $htmlButtons = "<div style='margin-top:15px; display:flex; flex-direction:column; gap:8px;'>";
+            $htmlButtons .= "<p style='font-size:0.85rem; color:#4b5563; margin-bottom:5px;'>📌 <b>คลิกปุ่มด้านล่างเพื่อบันทึกเมนูที่คุณต้องการ:</b></p>";
+            
+            foreach ($menusToSave as $m) {
+                $mName = htmlspecialchars($m['name'] ?? '');
+                $mCal = (int)($m['calories'] ?? 0);
+                $mDesc = htmlspecialchars($m['desc'] ?? '');
+                
+                // แปลงข้อมูลให้ปลอดภัยสำหรับส่งค่าผ่าน Javascript
+                $mNameJs = addslashes($m['name'] ?? '');
+                $mDescJs = addslashes($m['desc'] ?? '');
+                
+                // ชุดคำสั่ง JS สำหรับยิง API บันทึกข้อมูล
+                $onClick = "event.preventDefault(); var btn=this; btn.innerText='กำลังบันทึก...'; fetch('api_chat.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'save_ai_menu', menu_name:'{$mNameJs}', calories:{$mCal}, description:'{$mDescJs}'})}).then(r=>r.json()).then(d=>{if(d.status==='success'){btn.innerText='✅ บันทึกแล้ว'; btn.style.background='#9ca3af'; btn.disabled=true;}else{btn.innerText='บันทึก'; alert('เกิดข้อผิดพลาด');}}).catch(()=>alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'));";
+                
+                $onClickAttr = htmlspecialchars($onClick, ENT_QUOTES, 'UTF-8');
+                
+                $htmlButtons .= "<div style='background:#fff; border:1px solid #d1d5db; padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;'>";
+                $htmlButtons .= "<div style='flex:1;'><div style='font-weight:600; color:#16a34a; font-size:0.9rem;'>{$mName}</div><div style='font-size:0.75rem; color:#6b7280;'>🔥 {$mCal} kcal - {$mDesc}</div></div>";
+                $htmlButtons .= "<button onclick=\"{$onClickAttr}\" style='background:#22c55e; color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:0.8rem; font-family:Kanit,sans-serif; cursor:pointer; transition:0.2s; white-space:nowrap;'>บันทึก</button>";
+                $htmlButtons .= "</div>";
+            }
+            $htmlButtons .= "</div>";
+            
+            // นำปุ่มแนบต่อท้ายข้อความแชท
+            $parsedData['chat_response'] .= $htmlButtons;
+        }
+
+        // บันทึกประวัติแชทลงฐานข้อมูล (จะบันทึกปุ่มลงไปด้วยเพื่อให้โหลดแชทเก่าแล้วยังกดได้)
         $finalMessageToSave = $parsedData['chat_response'];
         if (!empty($menusToSave)) {
             $finalMessageToSave .= '|||MENUS|||' . json_encode($menusToSave, JSON_UNESCAPED_UNICODE);
@@ -197,7 +215,6 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
 
     echo json_encode($parsedData);
 } else {
-    // ส่ง Error ให้ฝั่งหน้าเว็บทราบชัดเจน
     $error_msg = isset($responseData['error']['message']) ? $responseData['error']['message'] : 'ระบบ AI ขัดข้องชั่วคราว (HTTP '.$httpcode.')';
     echo json_encode([
         'chat_response' => 'ขออภัยค่ะ มีข้อผิดพลาดจากเซิร์ฟเวอร์ AI: ' . $error_msg, 
