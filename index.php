@@ -532,7 +532,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
         </p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon"><i class="bi bi-hospital-fill" style="color: #ffffff;"></i></div>
+        <div class="feature-icon"><i class="fa-solid fa-hospital" style="color: #ffffff;"></i></div>
         <h3 class="feature-title">กรองตามโรค</h3>
         <p class="feature-desc">
           ค้นหาเมนูที่ปลอดภัยสำหรับโรคประจำตัว 20+ โรค
