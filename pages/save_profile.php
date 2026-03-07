@@ -46,22 +46,25 @@ switch ($activity) {
 }
 $tdee = $bmr * $activity_multiplier;
 
-// 4. ปรับแคลอรี่ตามเป้าหมาย
-$final_calories = $tdee;
-switch ($goal) {
-    case 'lose_slow': $final_calories -= 250; break;
-    case 'lose_normal': 
-    case 'lose': $final_calories -= 500; break;
-    case 'lose_fast': $final_calories -= 750; break;
-    case 'maintain': $final_calories = $tdee; break;
-    case 'gain_lean': $final_calories += 250; break;
-    case 'gain_bulk': 
-    case 'gain': $final_calories += 500; break;
-    case 'athlete': $final_calories += 400; break;
+/// 4.ดึง "ค่าปรับแคลอรี่" (cal_adjust) จากตาราง goals ที่แอดมินตั้งค่าไว้
+$cal_adjust = 0;
+$goal_stmt = $conn->prepare("SELECT cal_adjust FROM goals WHERE goal_key = ?");
+$goal_stmt->bind_param("s", $goal);
+$goal_stmt->execute();
+$goal_res = $goal_stmt->get_result()->fetch_assoc();
+if ($goal_res) {
+    $cal_adjust = (int)$goal_res['cal_adjust'];
 }
 
+// คำนวณแคลอรี่เป้าหมายสุทธิ (เอา TDEE ไปบวกหรือลบด้วยค่าที่ดึงมา)
+$final_calories = $tdee + $cal_adjust;
 $daily_target = round($final_calories);
-if ($daily_target < 1200) $daily_target = 1200;
+
+// เช็คขั้นต่ำเพื่อความปลอดภัยตามหลักโภชนาการ (ผู้ชายไม่ควรต่ำกว่า 1500 / ผู้หญิงไม่ควรต่ำกว่า 1200)
+$min_cal = ($gender == 'male') ? 1500 : 1200;
+if ($daily_target < $min_cal) {
+    $daily_target = $min_cal;
+}
 
 // 5. บันทึกลงฐานข้อมูล (เพิ่มคอลัมน์ goal_preference ลงไปในคำสั่ง)
 $sql = "INSERT INTO health_profiles 

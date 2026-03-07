@@ -30,9 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim($_POST['title']);
         $description = trim($_POST['description']);
         $badge = trim($_POST['badge']);
+        $cal_adjust = (int)$_POST['cal_adjust'];
         
-        $stmt = $conn->prepare("INSERT INTO goals (goal_key, title, description, badge) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $goal_key, $title, $description, $badge);
+        $stmt = $conn->prepare("INSERT INTO goals (goal_key, title, description, badge, cal_adjust) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssi", $goal_key, $title, $description, $badge, $cal_adjust);
         if ($stmt->execute()) {
             $success_msg = "เพิ่มเป้าหมายใหม่เรียบร้อยแล้ว";
         } else {
@@ -47,9 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim($_POST['title']);
         $description = trim($_POST['description']);
         $badge = trim($_POST['badge']);
+        $cal_adjust = (int)$_POST['cal_adjust'];
         
-        $stmt = $conn->prepare("UPDATE goals SET goal_key=?, title=?, description=?, badge=? WHERE id=?");
-        $stmt->bind_param("ssssi", $goal_key, $title, $description, $badge, $id);
+        $stmt = $conn->prepare("UPDATE goals SET goal_key=?, title=?, description=?, badge=?, cal_adjust=? WHERE id=?");
+        $stmt->bind_param("ssssii", $goal_key, $title, $description, $badge, $cal_adjust, $id);
         if ($stmt->execute()) {
             $success_msg = "อัปเดตข้อมูลเป้าหมายสำเร็จ";
         } else {
@@ -61,7 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_goal') {
         $id = (int)$_POST['goal_id'];
         
-        // 3.1 ค้นหารหัส (goal_key) ของเป้าหมายที่กำลังจะถูกลบก่อน
         $find_stmt = $conn->prepare("SELECT goal_key FROM goals WHERE id = ?");
         $find_stmt->bind_param("i", $id);
         $find_stmt->execute();
@@ -69,21 +70,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($target_goal) {
             $deleted_key = $target_goal['goal_key'];
-            
-            // 3.2 สั่งเคลียร์ข้อมูลใน health_profiles
-            // (ใครก็ตามที่เคยเลือกเป้าหมายที่โดนลบนี้ จะถูกรีเซ็ตกลับเป็นค่าเริ่มต้นคือ 'lose_normal')
             $clear_stmt = $conn->prepare("UPDATE health_profiles SET goal_preference = 'lose_normal' WHERE goal_preference = ?");
             $clear_stmt->bind_param("s", $deleted_key);
             $clear_stmt->execute();
         }
 
-        // 3.3 ลบเป้าหมายนั้นออกจากตาราง goals อย่างสมบูรณ์
         $stmt = $conn->prepare("DELETE FROM goals WHERE id=?");
         $stmt->bind_param("i", $id);
         if ($stmt->execute()) {
             $success_msg = "ลบเป้าหมายและรีเซ็ตข้อมูลของผู้ใช้ที่เกี่ยวข้องเรียบร้อยแล้ว";
         } else {
-            $error_msg = "เกิดข้อผิดพลาดในการลบเป้าหมาย";
+            $error_msg = "เกิดข้อผิดพลาดในการลบ";
         }
     }
 }
@@ -149,7 +146,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     <button class="hamburger"><i class="fas fa-bars"></i></button>
     <div style="flex:1;">
       <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:#2b3452;">จัดการเป้าหมาย (Goals)</div>
-      <div style="font-size:.75rem;color:var(--muted);"><i class="fas fa-bullseye me-1"></i> ตัวเลือกเป้าหมายในหน้าตั้งค่า Profile</div>
+      <div style="font-size:.75rem;color:var(--muted);"><i class="fas fa-bullseye me-1"></i> ตัวเลือกเป้าหมายและกำหนดแคลอรี่ที่จะนำไปคำนวณ</div>
     </div>
     <button onclick="openModal('add')" class="btn" style="background:linear-gradient(135deg,var(--g500),var(--t500)); color:#fff; box-shadow:0 4px 12px rgba(34,197,94,.2);">
       <i class="fas fa-plus"></i> เพิ่มเป้าหมายใหม่
@@ -165,8 +162,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
               <th>ID</th>
               <th>Key (รหัส)</th>
               <th>ชื่อเป้าหมาย</th>
-              <th>คำอธิบาย</th>
               <th>ป้ายกำกับ (Badge)</th>
+              <th>ปรับค่าแคลอรี่</th>
               <th style="text-align: right;">จัดการ</th>
             </tr>
           </thead>
@@ -175,9 +172,20 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
             <tr>
               <td style="color:var(--muted); font-weight:600;">#<?= $g['id'] ?></td>
               <td><span class="badge badge-gray"><?= htmlspecialchars($g['goal_key']) ?></span></td>
-              <td style="font-weight:600; color:var(--txt);"><?= htmlspecialchars($g['title']) ?></td>
-              <td style="color:var(--muted);"><?= htmlspecialchars($g['description']) ?></td>
+              <td style="font-weight:600; color:var(--txt);">
+                  <?= htmlspecialchars($g['title']) ?><br>
+                  <span style="font-size: 0.75rem; color:var(--muted); font-weight:400;"><?= htmlspecialchars($g['description']) ?></span>
+              </td>
               <td><span class="badge badge-green"><?= htmlspecialchars($g['badge']) ?></span></td>
+              <td>
+                  <?php if($g['cal_adjust'] > 0): ?>
+                      <span style="color:#ea580c; font-weight:700;">+<?= $g['cal_adjust'] ?> kcal</span>
+                  <?php elseif($g['cal_adjust'] < 0): ?>
+                      <span style="color:#16a34a; font-weight:700;"><?= $g['cal_adjust'] ?> kcal</span>
+                  <?php else: ?>
+                      <span style="color:var(--muted); font-weight:700;">คงที่ (0)</span>
+                  <?php endif; ?>
+              </td>
               <td style="text-align: right; min-width: 150px;">
                 <div style="display:inline-flex; gap:6px;">
                   <button type="button" onclick="openModal('edit', <?= htmlspecialchars(json_encode($g), ENT_QUOTES) ?>)" class="btn" style="background:#f8faf9; color:var(--g700); border:1px solid var(--bdr); padding:6px 10px; font-size:0.75rem;">
@@ -203,7 +211,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 </form>
 
 <div id="goalModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:24px;padding:32px;max-width:500px;width:90%;box-shadow:0 20px 40px rgba(0,0,0,.15);">
+  <div style="background:#fff;border-radius:24px;padding:32px;max-width:550px;width:90%;box-shadow:0 20px 40px rgba(0,0,0,.15);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1px solid var(--bdr);padding-bottom:16px;">
       <h3 id="modalTitle" style="font-family:'Nunito',sans-serif;font-size:1.25rem;font-weight:800;color:#2b3452;margin:0;">
         <i class="fas fa-bullseye" style="color:var(--g500);margin-right:8px;"></i> <span id="modalTitleText">เพิ่มเป้าหมาย</span>
@@ -217,14 +225,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       <input type="hidden" name="action" id="formAction" value="add_goal">
       <input type="hidden" name="goal_id" id="goal_id">
       
-      <div style="margin-bottom:16px;">
-        <label class="form-label">รหัสเป้าหมาย (ภาษาอังกฤษ ห้ามเว้นวรรค เช่น lose_fat)</label>
-        <input type="text" name="goal_key" id="goal_key" class="form-input" placeholder="เช่น lose_fat" required>
-      </div>
-      
-      <div style="margin-bottom:16px;">
-        <label class="form-label">ชื่อเป้าหมาย (ภาษาไทย)</label>
-        <input type="text" name="title" id="title" class="form-input" placeholder="เช่น ลดน้ำหนักเร่งด่วน" required>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
+          <div>
+            <label class="form-label">รหัส (ภาษาอังกฤษ ห้ามเว้นวรรค)</label>
+            <input type="text" name="goal_key" id="goal_key" class="form-input" placeholder="เช่น lose_fat" required>
+          </div>
+          <div>
+            <label class="form-label">ชื่อเป้าหมาย (ภาษาไทย)</label>
+            <input type="text" name="title" id="title" class="form-input" placeholder="เช่น ลดน้ำหนักเร่งด่วน" required>
+          </div>
       </div>
 
       <div style="margin-bottom:16px;">
@@ -232,9 +241,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
         <input type="text" name="description" id="description" class="form-input" placeholder="เช่น ต้องมีวินัยสูง" required>
       </div>
 
-      <div style="margin-bottom:24px;">
-        <label class="form-label">ป้ายกำกับ (Badge)</label>
-        <input type="text" name="badge" id="badge" class="form-input" placeholder="เช่น -500 kcal">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:24px;">
+          <div>
+            <label class="form-label">ป้ายกำกับ (แสดงในหน้าเว็บ)</label>
+            <input type="text" name="badge" id="badge" class="form-input" placeholder="เช่น -500 kcal">
+          </div>
+          <div>
+            <label class="form-label text-orange-600">ค่าปรับแคลอรี่ตัวเลข (kcal) *สำคัญ</label>
+            <input type="number" name="cal_adjust" id="cal_adjust" class="form-input" placeholder="เช่น -500 (ติดลบได้)" required>
+          </div>
       </div>
       
       <div style="display:flex; justify-content:flex-end; gap:12px;">
@@ -284,6 +299,7 @@ function openModal(type, data = null) {
     document.getElementById('title').value = data.title;
     document.getElementById('description').value = data.description;
     document.getElementById('badge').value = data.badge;
+    document.getElementById('cal_adjust').value = data.cal_adjust; // ดึงตัวเลขมาโชว์
   } else {
     document.getElementById('modalTitleText').innerText = 'เพิ่มเป้าหมายใหม่';
     document.getElementById('formAction').value = 'add_goal';
@@ -292,6 +308,7 @@ function openModal(type, data = null) {
     document.getElementById('title').value = '';
     document.getElementById('description').value = '';
     document.getElementById('badge').value = '';
+    document.getElementById('cal_adjust').value = '0';
   }
   document.getElementById('goalModal').style.display = 'flex';
 }
