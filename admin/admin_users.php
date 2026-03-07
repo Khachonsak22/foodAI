@@ -27,6 +27,7 @@ $error_msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
+    // ----- 1. รีเซ็ตรหัสผ่าน -----
     if ($action === 'reset_password') {
         $target_id = (int)$_POST['user_id'];
         $new_password = 'password123'; // Default password
@@ -36,13 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("si", $hash, $target_id);
         
         if ($stmt->execute()) {
-            $success_msg = "รีเซ็ทรหัสผ่านเรียบร้อย (เป็นรหัส: password123)";
+            $success_msg = "รีเซ็ตรหัสผ่านเรียบร้อย (เป็นรหัส: password123)";
         } else {
             $error_msg = "เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน";
         }
     }
     
-    // อัปเกรดให้สามารถบันทึกข้อมูลสุขภาพได้ด้วย
+    // ----- 2. แก้ไขข้อมูลผู้ใช้ -----
     if ($action === 'edit_user') {
         $target_id = (int)$_POST['user_id'];
         $username = trim($_POST['username']);
@@ -54,24 +55,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $target_cal = (int)$_POST['daily_calorie_target'];
         $conditions = trim($_POST['health_conditions']);
         
-        // 1. อัปเดตตาราง users
+        // อัปเดตตาราง users
         $stmt = $conn->prepare("UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ? WHERE id = ?");
         $stmt->bind_param("ssssi", $username, $email, $first_name, $last_name, $target_id);
         $user_updated = $stmt->execute();
         
-        // 2. จัดการตาราง health_profiles (เช็คก่อนว่ามีข้อมูลหรือยัง)
+        // จัดการตาราง health_profiles
         $check_hp = $conn->prepare("SELECT user_id FROM health_profiles WHERE user_id = ?");
         $check_hp->bind_param("i", $target_id);
         $check_hp->execute();
         $hp_exists = $check_hp->get_result()->num_rows > 0;
         
         if ($hp_exists) {
-            // มีอยู่แล้ว -> อัปเดต
             $hp_stmt = $conn->prepare("UPDATE health_profiles SET daily_calorie_target = ?, health_conditions = ? WHERE user_id = ?");
             $hp_stmt->bind_param("isi", $target_cal, $conditions, $target_id);
             $hp_stmt->execute();
         } else {
-            // ยังไม่มี -> สร้างใหม่
             $hp_stmt = $conn->prepare("INSERT INTO health_profiles (user_id, daily_calorie_target, health_conditions) VALUES (?, ?, ?)");
             $hp_stmt->bind_param("iis", $target_id, $target_cal, $conditions);
             $hp_stmt->execute();
@@ -81,6 +80,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success_msg = "อัปเดตข้อมูลผู้ใช้และข้อมูลสุขภาพเรียบร้อยแล้ว";
         } else {
             $error_msg = "เกิดข้อผิดพลาดในการแก้ไขข้อมูล";
+        }
+    }
+
+    // ----- 3. ลบผู้ใช้ -----
+    if ($action === 'delete_user') {
+        $target_id = (int)$_POST['user_id'];
+        
+        $conn->query("DELETE FROM health_profiles WHERE user_id = $target_id");
+        $conn->query("DELETE FROM ai_saved_menus WHERE user_id = $target_id");
+        $conn->query("DELETE FROM meal_logs WHERE user_id = $target_id");
+        $conn->query("DELETE FROM chat_logs WHERE user_id = $target_id");
+        $conn->query("DELETE FROM user_allergies WHERE user_id = $target_id");
+        
+        $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->bind_param("i", $target_id);
+        
+        if ($stmt->execute()) {
+            $success_msg = "ลบผู้ใช้และข้อมูลที่เกี่ยวข้องออกจากระบบเรียบร้อยแล้ว";
+        } else {
+            $error_msg = "เกิดข้อผิดพลาดในการลบผู้ใช้";
         }
     }
 }
@@ -106,37 +125,49 @@ $total = count($users);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>จัดการผู้ใช้ — Admin</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
 <style>
 :root{--g50:#f0fdf4;--g100:#dcfce7;--g200:#bbf7d0;--g300:#86efac;--g400:#4ade80;--g500:#22c55e;--g600:#16a34a;--g700:#15803d;--t400:#2dd4bf;--t500:#14b8a6;--t600:#0d9488;--bg:#f8faf9;--card:#fff;--bdr:#e8f0e9;--txt:#1a2e1a;--sub:#4b6b4e;--muted:#8da98f;--sb-w:260px;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(circle,#c8e6c9 1px,transparent 1px);background-size:28px 28px;opacity:.35;}
-.sidebar{width:var(--sb-w);min-height:100vh;background:#fff;border-right:1px solid #e5ede6;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 24px rgba(34,197,94,.06);}
-.sb-logo{padding:24px 22px 20px;border-bottom:1px solid #e5ede6;display:flex;align-items:center;gap:11px;}
-.sb-logo-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 4px 12px rgba(239,68,68,.35);}
-.sb-logo-text{font-family:'Nunito',sans-serif;font-size:1.18rem;font-weight:800;color:#dc2626;letter-spacing:-.02em;line-height:1;}
-.sb-logo-sub{font-size:.6rem;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
-.sb-nav{padding:6px 12px;display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto;}
-.nav-item{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:12px;text-decoration:none;color:var(--sub);font-size:.82rem;font-weight:500;transition:all .18s;}
-.nav-item:hover{background:#fef2f2;color:#dc2626;}
-.nav-item.active{background:#fef2f2;color:#dc2626;font-weight:600;}
-.nav-item.active .ni{background:#dc2626;color:#fff;}
-.ni{width:34px;height:34px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;transition:all .18s;color:#dc2626;}
-.page-wrap{margin-left:var(--sb-w);flex:1;position:relative;z-index:1;min-width:0;}
+.page-wrap{margin-left:var(--sb-w);flex:1;position:relative;z-index:1;min-width:0;transition: margin-left 0.3s ease;}
 .topbar{height:70px;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 2.5rem;gap:14px;position:sticky;top:0;z-index:50;}
+
+/* --------------------------------------------------------------------------
+   ✅ จุดที่แก้ไข 1: เพิ่ม CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ
+   -------------------------------------------------------------------------- */
+.hamburger {
+  display: none;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #fff; border: 1px solid var(--bdr);
+  align-items: center; justify-content: center;
+  cursor: pointer; color: var(--txt); font-size: 1.1rem;
+  transition: all .2s; margin-right: 14px; flex-shrink: 0;
+}
+.hamburger:hover { background: var(--g50); color: var(--g600); border-color: var(--g300); }
+
+@media (max-width: 1024px) {
+  .hamburger { display: flex; }
+  .page-wrap { margin-left: 0; }
+  .topbar { padding: 0 1.25rem; }
+  main { padding: 1.5rem 1rem !important; }
+}
+/* -------------------------------------------------------------------------- */
 
 /* ปรับปรุงดีไซน์ตาราง */
 .card { background:#fff; border:none; border-radius:24px; padding:28px; box-shadow:0 10px 30px rgba(0,0,0,.03); margin-bottom: 2rem;}
@@ -177,16 +208,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .form-input { width:100%; padding:10px 14px; border:1.5px solid var(--bdr); border-radius:10px; font-family:'Kanit',sans-serif; font-size:.88rem; outline: none; transition: all 0.2s; background: #fafafa;}
 .form-input:focus { border-color: var(--g500); background: #fff; box-shadow: 0 0 0 3px rgba(34,197,94,.1); }
 .form-label { display:block; font-size:.82rem; font-weight:600; color:var(--sub); margin-bottom:6px; }
-
-@media (max-width:1024px){
-  .page-wrap{margin-left:0;}
-  .hamburger{display:flex;}
-}
-@media (max-width:768px){
-  .topbar{padding:0 1rem;}
-  main{padding:1.5rem 1rem;}
-  .card-header-custom{flex-direction:column;gap:1rem;align-items:flex-start;}
-}
+.swal2-container { font-family: 'Kanit', sans-serif !important; }
 </style>
 </head>
 <body>
@@ -195,6 +217,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 <div class="page-wrap">
   <header class="topbar">
+    
+    <button class="hamburger">
+      <i class="fas fa-bars"></i>
+    </button>
     <div style="flex:1;">
       <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:#2b3452;">จัดการผู้ใช้ระบบ (Users)</div>
       <div style="font-size:.75rem;color:var(--muted);"><i class="fas fa-users me-1"></i> สมาชิกทั้งหมด <?= number_format($total) ?> คน</div>
@@ -202,18 +228,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   </header>
   
   <main style="padding:2.5rem; max-width: 1400px; margin: 0 auto;">
-    
-    <?php if ($success_msg): ?>
-    <div style="background:#dcfce7; border:none; color:#15803d; padding:14px 18px; border-radius:14px; margin-bottom:24px; font-size:.85rem; font-weight:500; display:flex; align-items:center; gap:10px; box-shadow: 0 4px 12px rgba(34,197,94,.1);">
-      <i class="fas fa-check-circle" style="font-size: 1.1rem;"></i> <?= htmlspecialchars($success_msg) ?>
-    </div>
-    <?php endif; ?>
-
-    <?php if ($error_msg): ?>
-    <div style="background:#fee2e2; border:none; color:#b91c1c; padding:14px 18px; border-radius:14px; margin-bottom:24px; font-size:.85rem; font-weight:500; display:flex; align-items:center; gap:10px;">
-      <i class="fas fa-exclamation-circle" style="font-size: 1.1rem;"></i> <?= htmlspecialchars($error_msg) ?>
-    </div>
-    <?php endif; ?>
     
     <div class="card">
       <div style="overflow-x:auto;">
@@ -254,21 +268,21 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
               <td data-order="<?= strtotime($u['created_at']) ?>" style="font-size:.8rem; color:var(--muted);">
                 <?= date('j M Y', strtotime($u['created_at'])) ?>
               </td>
-              <td style="text-align: right; min-width: 190px;">
+              <td style="text-align: right; min-width: 250px;">
                 <div style="display:inline-flex; gap:6px;">
-                  <button onclick="openEditModal(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['first_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['last_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['daily_calorie_target'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($u['health_conditions'] ?? '', ENT_QUOTES) ?>')" 
-                          class="btn btn-sm" 
-                          style="background:#f8faf9; color:var(--g700); border:1px solid var(--bdr);">
+                  
+                  <button type="button" onclick="openEditModal(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['first_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['last_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['daily_calorie_target'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($u['health_conditions'] ?? '', ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#f8faf9; color:var(--g700); border:1px solid var(--bdr);">
                     <i class="fas fa-user-edit"></i> แก้ไข
                   </button>
 
-                  <form method="POST" style="margin:0;" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะรีเซ็ตรหัสผ่านของผู้ใช้นี้เป็น password123 ?');">
-                    <input type="hidden" name="action" value="reset_password">
-                    <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                    <button type="submit" class="btn btn-sm" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
-                      <i class="fas fa-key"></i> Reset PW
-                    </button>
-                  </form>
+                  <button type="button" onclick="confirmReset(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
+                    <i class="fas fa-key"></i> Reset PW
+                  </button>
+
+                  <button type="button" onclick="confirmDelete(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">
+                    <i class="fas fa-trash-alt"></i> ลบ
+                  </button>
+
                 </div>
               </td>
             </tr>
@@ -281,13 +295,18 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   </main>
 </div>
 
+<form id="actionForm" method="POST" style="display:none;">
+    <input type="hidden" name="action" id="form_action">
+    <input type="hidden" name="user_id" id="form_user_id">
+</form>
+
 <div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;animation:fadeIn 0.2s;">
   <div style="background:#fff;border-radius:24px;padding:32px;max-width:550px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,.15);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1px solid var(--bdr);padding-bottom:16px;">
       <h3 style="font-family:'Nunito',sans-serif;font-size:1.25rem;font-weight:800;color:#2b3452;margin:0;">
         <i class="fas fa-user-edit" style="color:var(--g500);margin-right:8px;"></i> แก้ไขข้อมูลผู้ใช้
       </h3>
-      <button onclick="closeEditModal()" style="width:36px;height:36px;border-radius:10px;border:none;background:#f1f5f3;color:var(--muted);cursor:pointer;font-size:1rem;transition:all 0.2s;">
+      <button type="button" onclick="closeEditModal()" style="width:36px;height:36px;border-radius:10px;border:none;background:#f1f5f3;color:var(--muted);cursor:pointer;font-size:1rem;transition:all 0.2s;">
         <i class="fas fa-times"></i>
       </button>
     </div>
@@ -353,6 +372,66 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 </style>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if ($success_msg): ?>
+        Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ!',
+            text: '<?= htmlspecialchars($success_msg) ?>',
+            confirmButtonColor: '#22c55e',
+            confirmButtonText: 'ตกลง'
+        });
+    <?php endif; ?>
+
+    <?php if ($error_msg): ?>
+        Swal.fire({
+            icon: 'error',
+            title: 'พบข้อผิดพลาด!',
+            text: '<?= htmlspecialchars($error_msg) ?>',
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'ตกลง'
+        });
+    <?php endif; ?>
+});
+
+function confirmDelete(id, username) {
+    Swal.fire({
+        title: 'ยืนยันการลบผู้ใช้?',
+        html: `คุณต้องการลบผู้ใช้ <b>${username}</b> ใช่หรือไม่?<br><span style="color:#dc2626; font-size:0.9rem;">(ข้อมูลประวัติอาหารและการแชทจะถูกลบทั้งหมด)</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#9ca3af',
+        confirmButtonText: 'ใช่, ลบผู้ใช้!',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('form_action').value = 'delete_user';
+            document.getElementById('form_user_id').value = id;
+            document.getElementById('actionForm').submit();
+        }
+    });
+}
+
+function confirmReset(id, username) {
+    Swal.fire({
+        title: 'รีเซ็ตรหัสผ่าน?',
+        html: `คุณแน่ใจหรือไม่ที่จะรีเซ็ตรหัสผ่านของ <b>${username}</b><br>ให้เป็นรหัสเริ่มต้น (password123)`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#d97706',
+        cancelButtonColor: '#9ca3af',
+        confirmButtonText: 'ใช่, รีเซ็ตเลย!',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('form_action').value = 'reset_password';
+            document.getElementById('form_user_id').value = id;
+            document.getElementById('actionForm').submit();
+        }
+    });
+}
+
 $(document).ready(function() {
   $('#usersTable').DataTable({
     pageLength: 25,
@@ -393,7 +472,6 @@ $(document).ready(function() {
   });
 });
 
-// อัปเดตฟังก์ชันรับพารามิเตอร์ข้อมูลสุขภาพเพิ่ม
 function openEditModal(id, username, email, first_name, last_name, target, conditions) {
   document.getElementById('edit_user_id').value = id;
   document.getElementById('edit_username').value = username;
@@ -401,7 +479,6 @@ function openEditModal(id, username, email, first_name, last_name, target, condi
   document.getElementById('edit_first_name').value = first_name;
   document.getElementById('edit_last_name').value = last_name;
   
-  // ยัดข้อมูลสุขภาพลงไปใน Form
   document.getElementById('edit_target').value = target;
   document.getElementById('edit_conditions').value = conditions;
   
@@ -412,7 +489,6 @@ function closeEditModal() {
   document.getElementById('editModal').style.display = 'none';
 }
 
-// Close modal on outside click
 document.getElementById('editModal').addEventListener('click', function(e) {
   if (e.target === this) closeEditModal();
 });
