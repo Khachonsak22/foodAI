@@ -61,7 +61,7 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
 
     <a href="admin_goals.php" class="nav-item <?php echo ($current_page === 'admin_goals.php') ? 'active' : ''; ?>">
       <span class="ni"><i class="fas fa-heartbeat"></i></span>
-      <span>เป้าหมาย</span>
+      <span>จัดการข้อมูลสุขภาพ</span>
     </a>
 
     <a href="admin_chat_logs.php" class="nav-item <?php echo ($current_page === 'admin_chat_logs.php') ? 'active' : ''; ?>">
