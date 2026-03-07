@@ -36,15 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit();
 }
 
-// ✅ อัปเดต SQL ให้ดึงชื่อเป้าหมายจากตาราง goals มาด้วย
 $sql = "SELECT u.first_name, u.last_name,
                COALESCE(h.daily_calorie_target, 2000) as daily_calorie_target,
                COALESCE(h.dietary_type, 'ทั่วไป') as dietary_type,
-               COALESCE(h.health_conditions, 'ไม่มี') as health_conditions,
-               COALESCE(g.title, 'ไม่ระบุเป้าหมาย') as goal_title
+               COALESCE(h.health_conditions, 'ไม่มี') as health_conditions
         FROM users u
         LEFT JOIN health_profiles h ON u.id = h.user_id
-        LEFT JOIN goals g ON h.goal_preference = g.goal_key
         WHERE u.id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $user_id);
@@ -54,14 +51,13 @@ $user_data = $stmt->get_result()->fetch_assoc();
 $firstName  = $user_data['first_name'] ?? "Guest";
 $lastName   = $user_data['last_name']  ?? "";
 $targetCal  = $user_data['daily_calorie_target'];
-$goalTitle  = $user_data['goal_title']; // เก็บชื่อเป้าหมาย
 $dietType   = $user_data['dietary_type'];
 $conditions = $user_data['health_conditions'];
 if ($conditions === '0' || empty($conditions)) $conditions = "ไม่มีระบุ";
 
 $today       = date('Y-m-d');
 
-// 1. แคลอรี่ที่กินจริง
+// 1. แก้ไขให้แคลอรี่รวมดึงมาจากตาราง meal_logs (มื้อที่กินจริง) 
 $cal_sql     = "SELECT SUM(r.calories) as total_cal 
                 FROM meal_logs ml
                 INNER JOIN recipes r ON ml.recipe_id = r.id
@@ -71,14 +67,9 @@ $stmt_cal->bind_param("is", $user_id, $today);
 $stmt_cal->execute();
 $cal_result  = $stmt_cal->get_result()->fetch_assoc();
 $consumedCal = $cal_result['total_cal'] ?? 0;
-
-// ✅ ปรับการคำนวณ % และหาค่าที่เกินเป้าหมาย (Over Calorie)
-$calPercentRaw = ($targetCal > 0) ? ($consumedCal / $targetCal) * 100 : 0;
-$calPercent    = min(100, $calPercentRaw); 
-$barWidth      = min($calPercentRaw, 100);
-$remaining     = max(0, $targetCal - $consumedCal);
-$over          = max(0, $consumedCal - $targetCal); // ค่าที่เกิน
-$ring_offset   = round(314 * (1 - min($calPercentRaw, 100) / 100));
+$calPercent  = ($targetCal > 0) ? min(100, ($consumedCal / $targetCal) * 100) : 0;
+$barWidth    = min($calPercent, 100);
+$remaining   = max(0, $targetCal - $consumedCal);
 
 // Water intake
 $water_sql = "SELECT total_ml FROM water_logs WHERE user_id = ? AND log_date = ?";
@@ -135,6 +126,7 @@ $stmt_m->execute();
 $menu_res   = $stmt_m->get_result();
 $menu_count = $menu_res->num_rows;
 
+$ring_offset = round(314 * (1 - min($calPercent, 100) / 100));
 $initials    = mb_strtoupper(mb_substr($firstName, 0, 1)) . mb_strtoupper(mb_substr($lastName, 0, 1));
 
 // Current page for nav highlight
@@ -497,6 +489,7 @@ main {
 .ring-bg   { fill:none; stroke:rgba(255,255,255,.12); stroke-width:9; }
 .ring-fill {
   fill:none; stroke-width:9; stroke-linecap:round;
+  stroke: url(#greenGrad);
   stroke-dasharray: 314;
   stroke-dashoffset: <?php echo $ring_offset; ?>;
   transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1);
@@ -509,6 +502,8 @@ main {
 .pbar { height:7px; background:rgba(255,255,255,.12); border-radius:99px; overflow:hidden; }
 .pbar-fill {
   height:100%; border-radius:99px;
+  background: linear-gradient(90deg, var(--g400), var(--t400));
+  box-shadow: 0 0 10px rgba(74,222,128,0.5);
   transition: width 1.2s cubic-bezier(.4,0,.2,1);
 }
 .pbar-green { background: linear-gradient(90deg, var(--g500), var(--g400)); box-shadow:0 0 8px rgba(34,197,94,.4); }
@@ -721,19 +716,15 @@ main {
                     <stop offset="0%"   stop-color="#4ade80"/>
                     <stop offset="100%" stop-color="#2dd4bf"/>
                   </linearGradient>
-                  <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%"   stop-color="#fca5a5"/>
-                    <stop offset="100%" stop-color="#ef4444"/>
-                  </linearGradient>
                 </defs>
                 <circle class="ring-bg"   cx="60" cy="60" r="50"/>
-                <circle class="ring-fill" cx="60" cy="60" r="50" style="stroke: url(#<?php echo $over > 0 ? 'redGrad' : 'greenGrad'; ?>);"/>
+                <circle class="ring-fill" cx="60" cy="60" r="50"/>
               </svg>
               <div class="ring-center">
-                <span style="font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;color:<?php echo $over > 0 ? '#fca5a5' : '#4ade80'; ?>;line-height:1;">
-                  <?php echo round($calPercentRaw); ?><span style="font-size:.58rem;font-family:'Kanit',sans-serif;font-weight:400;color:rgba(255,255,255,.9);">%</span>
+                <span style="font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;color:#4ade80;line-height:1;">
+                  <?php echo round($calPercent); ?><span style="font-size:.58rem;font-family:'Kanit',sans-serif;font-weight:400;color:rgba(255,255,255,.9);">%</span>
                 </span>
-                <span style="font-size:.56rem;color:rgba(255,255,255,.9);margin-top:2px;letter-spacing:.04em;"><?php echo $over > 0 ? 'เกินเป้า' : 'บรรลุแล้ว'; ?></span>
+                <span style="font-size:.56rem;color:rgba(255,255,255,.9);margin-top:2px;letter-spacing:.04em;">บรรลุแล้ว</span>
               </div>
             </div>
             <div style="flex:1;min-width:0;">
@@ -742,20 +733,16 @@ main {
                 <span style="font-size:.8rem;font-weight:400;font-family:'Kanit',sans-serif;color:rgba(255,255,255,.9);">kcal</span>
               </div>
               <p style="font-size:.72rem;color:rgba(255,255,255,.9);margin-top:7px;">
-                เป้าหมาย: <?php echo htmlspecialchars($goalTitle); ?> <br><span style="color:#4ade80;font-weight:600;"><?php echo number_format($targetCal); ?> kcal</span>
+                เป้าหมาย <span style="color:#4ade80;font-weight:600;"><?php echo number_format($targetCal); ?> kcal</span>
               </p>
               <div class="pbar" style="margin-top:14px;">
-                <div class="pbar-fill" style="width:<?php echo $barWidth; ?>%; <?php if($over > 0) echo 'background:linear-gradient(90deg, #fca5a5, #ef4444);box-shadow:0 0 10px rgba(239,68,68,0.5);'; ?>"></div>
+                <div class="pbar-fill" style="width:<?php echo $barWidth; ?>%;"></div>
               </div>
               <div style="display:flex;justify-content:space-between;margin-top:9px;">
                 <p style="font-size:.68rem;color:rgba(255,255,255,.9);">
-                  <?php if($over > 0): ?>
-                    เกิน <span style="color:#fca5a5;font-weight:600;">+<?php echo number_format($over); ?> kcal</span>
-                  <?php else: ?>
-                    เหลือ <span style="color:#2dd4bf;font-weight:600;"><?php echo number_format($remaining); ?> kcal</span>
-                  <?php endif; ?>
+                  เหลือ <span style="color:#2dd4bf;font-weight:600;"><?php echo number_format($remaining); ?> kcal</span>
                 </p>
-                <p style="font-size:.68rem;color:rgba(255,255,255,.9);"><?php echo number_format($calPercentRaw,0); ?>%</p>
+                <p style="font-size:.68rem;color:rgba(255,255,255,.9);"><?php echo number_format($calPercent,0); ?>%</p>
               </div>
             </div>
           </div>
