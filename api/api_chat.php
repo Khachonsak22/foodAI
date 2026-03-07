@@ -25,15 +25,23 @@ if ($userId > 0) {
     $stmt->execute();
 }
 
-// ดึงข้อมูลสุขภาพ (เป้าหมาย, โรคประจำตัว)
-$profile = ['target' => 2000, 'conditions' => 'ไม่มี'];
+// ดึงข้อมูลสุขภาพ (เป้าหมาย, โรคประจำตัว, และชื่อเป้าหมายจากตาราง goals)
+$profile = ['target' => 2000, 'conditions' => 'ไม่มี', 'goal_title' => 'ไม่ระบุ', 'goal_desc' => ''];
 if ($userId > 0) {
-    $stmt = $conn->prepare("SELECT daily_calorie_target, health_conditions FROM health_profiles WHERE user_id = ?");
+    // JOIN ตาราง goals เพื่อให้รู้ชื่อภาษาไทยของเป้าหมาย
+    $stmt = $conn->prepare("
+        SELECT hp.daily_calorie_target, hp.health_conditions, g.title AS goal_title, g.description AS goal_desc
+        FROM health_profiles hp
+        LEFT JOIN goals g ON hp.goal_preference = g.goal_key
+        WHERE hp.user_id = ?
+    ");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     if ($row = $stmt->get_result()->fetch_assoc()) {
         $profile['target'] = $row['daily_calorie_target'];
         $profile['conditions'] = !empty($row['health_conditions']) ? $row['health_conditions'] : 'ไม่มี';
+        $profile['goal_title'] = !empty($row['goal_title']) ? $row['goal_title'] : 'ไม่ระบุ';
+        $profile['goal_desc']  = !empty($row['goal_desc']) ? $row['goal_desc'] : '';
     }
 }
 
@@ -78,6 +86,7 @@ $past_menu_str = empty($past_menus) ? 'ไม่มี' : implode(", ", $past_me
 $systemPrompt = "คุณคือเชฟและนักโภชนาการอัจฉริยะ ตอบกลับเป็นภาษาไทยที่สุภาพ
 ข้อมูลผู้ใช้:
 - เป้าหมายแคลอรี่: {$profile['target']} kcal/วัน
+- เป้าหมายสุขภาพ (Goal): {$profile['goal_title']} ({$profile['goal_desc']})
 - โรคประจำตัว: {$profile['conditions']}
 - อาหารที่แพ้: {$allergy_str}
 - เมนูที่เพิ่งทานไปเมื่อเร็วๆ นี้ (ห้ามแนะนำซ้ำเด็ดขาด): {$past_menu_str}

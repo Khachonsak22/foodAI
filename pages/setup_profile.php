@@ -256,30 +256,35 @@ main {
         </div>
         <div style="display:flex;flex-direction:column;gap:9px;">
           <?php
-          $goals = [
-            'lose_slow' => ['ลดน้ำหนักอย่างยั่งยืน','ค่อยๆ ลด ไม่โยโย่','-250 kcal'],
-            'lose_normal' => ['ลดน้ำหนักมาตรฐาน','ผลลัพธ์เห็นได้ชัดใน 1–2 เดือน','-500 kcal'],
-            'lose_fast' => ['ลดน้ำหนักเร่งด่วน','ต้องมีวินัยสูง (ระวังโยโย่)','-750 kcal'],
-            'maintain' => ['รักษาน้ำหนักให้คงที่','เพื่อสุขภาพที่ดีในระยะยาว','เท่าเดิม'],
-            'gain_lean' => ['เพิ่มกล้ามเนื้อ (ลีน)','เน้นกล้ามเนื้อ ไขมันเพิ่มน้อย','+250 kcal'],
-            'athlete' => ['เน้นพละกำลัง / นักกีฬา','เพิ่มพลังงานสำหรับการซ้อมหนัก','+400 kcal'],
-          ];
+          // ดึงข้อมูลเป้าหมายทั้งหมดจากฐานข้อมูลสดๆ
+          $goals = [];
+          $g_query = "SELECT goal_key, title, description, badge FROM goals ORDER BY id ASC";
+          $g_res = $conn->query($g_query);
+          if ($g_res && $g_res->num_rows > 0) {
+              while($g_row = $g_res->fetch_assoc()) {
+                  $goals[$g_row['goal_key']] = [$g_row['title'], $g_row['description'], $g_row['badge']];
+              }
+          } else {
+              // สำรองไว้เผื่อกรณีตารางว่างเปล่า
+              $goals = ['lose_normal' => ['ลดน้ำหนักมาตรฐาน', 'ผลลัพธ์เห็นได้ชัดใน 1–2 เดือน', '-500 kcal']];
+          }
+
           foreach ($goals as $val => [$title, $sub, $badge]):
           ?>
           <label class="goal-option" style="display:block;">
-            <input type="radio" name="goal" value="<?= $val ?>" <?= $goal_pref==$val?'checked':'' ?>>
+            <input type="radio" name="goal" value="<?= htmlspecialchars($val) ?>" <?= $goal_pref==$val?'checked':'' ?>>
             <div class="goal-card">
               <div>
-                <div class="goal-title"><?= $title ?></div>
-                <div class="goal-sub"><?= $sub ?></div>
+                <div class="goal-title"><?= htmlspecialchars($title) ?></div>
+                <div class="goal-sub"><?= htmlspecialchars($sub) ?></div>
               </div>
-              <span class="goal-badge"><?= $badge ?></span>
+              <span class="goal-badge"><?= htmlspecialchars($badge) ?></span>
             </div>
           </label>
           <?php endforeach; ?>
         </div>
       </div>
-
+      
       <!-- ── DIET ── -->
       <div class="form-card rv rv3">
         <div class="section-label">
