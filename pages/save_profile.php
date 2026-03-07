@@ -100,6 +100,6 @@ if ($stmt->execute()) {
     header("Location: dashboard.php");
     exit();
 } else {
-    echo "เกิดข้อผิดพลาด...: " . $conn->error;
+    echo "เกิดข้อผิดพลาด: " . $conn->error;
 }
 ?>
