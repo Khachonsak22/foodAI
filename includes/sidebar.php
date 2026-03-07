@@ -291,7 +291,7 @@ function confirmLogout(event, url) {
     showCancelButton: true,
     confirmButtonColor: '#dc2626', // สีแดงปุ่มยืนยัน
     cancelButtonColor: '#9ca3af', // สีเทาปุ่มยกเลิก
-    confirmButtonText: 'ใช่, ออกจากระบบ',
+    confirmButtonText: 'ออกจากระบบ',
     cancelButtonText: 'ยกเลิก'
   }).then((result) => {
     if (result.isConfirmed) {
