@@ -100,15 +100,16 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 4. พยายามเลือกเมนูจาก 'รายชื่อเมนูที่มีในฐานข้อมูลระบบ' ก่อน หากเมนูนั้นปลอดภัยและไม่ซ้ำ
 5. หากในฐานข้อมูลไม่มีเมนูที่เหมาะสม หรือเมนูที่มีมันซ้ำกับที่เคยกินไปแล้ว ให้คิดเมนูอาหารไทยขึ้นมาใหม่ให้ครบ 4 มื้อ
 6. ให้ตอบกลับในรูปแบบ **JSON เท่านั้น** โดยไม่มี Markdown (```json) ครอบ
+7. ในช่อง \"name\" ของ recommended_menus ให้ใส่ **แค่ชื่อเมนูอาหารเพียวๆ เท่านั้น** ห้ามมีคำว่า \"มื้อเช้า\", \"มื้อกลางวัน\", \"มื้อเย็น\", \"มื้อว่าง\" หรือตัวเลขลำดับ นำหน้าหรือตามหลังเด็ดขาด (เช่น ให้ตอบ \"ข้าวกะเพราไก่\" ห้ามตอบ \"มื้อเช้า: ข้าวกะเพราไก่\")
 
 รูปแบบ JSON ที่ต้องการ:
 {
   \"chat_response\": \"ข้อความอธิบายว่าทำไมถึงเลือกเมนูเหล่านี้ ปลอดภัยต่อโรคประจำตัวหรืออาหารที่แพ้อย่างไร (สามารถใช้ Markdown ตกแต่งข้อความได้)\",
   \"recommended_menus\": [
-    { \"name\": \"ชื่อเมนู 1 \", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนู 2 \", \"Menu_Desc\": 500, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนู 3 \", \"calories\": 150, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนู 4 \", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" }
+    { \"name\": \"ชื่อเมนูอาหารเพียวๆ\", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนูอาหารเพียวๆ\", \"calories\": 500, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนูอาหารเพียวๆ\", \"calories\": 150, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนูอาหารเพียวๆ\", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" }
   ]
 }
 หมายเหตุ: ถ้าผู้ใช้แค่ชวนคุยทั่วไป ไม่ได้ขอเมนู ให้ปล่อย recommended_menus เป็นอาเรย์ว่าง []
@@ -129,7 +130,7 @@ if ($setting_stmt && $setting_stmt->num_rows > 0) {
 }
 
 // เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
-$url = "https://generativelanguage.googleapis.com/v1beta/models/{$apiModel}:generateContent?key=" . $apiKey;
+$url = "[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){$apiModel}:generateContent?key=" . $apiKey;
 
 // 4. จัดรูปแบบข้อมูล (ล็อกคอเป็น JSON เพื่อความเสถียร)
 $data = [
@@ -171,19 +172,7 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
     if ($userId > 0) {
         $menusToSave = $parsedData['recommended_menus'] ?? [];
         
-        // 1. บันทึกเมนูลงตาราง ai_saved_menus อัตโนมัติ (เพื่อให้ไปโผล่ในหน้า meal_log ทันที)
-        if (!empty($menusToSave)) {
-            $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
-            foreach ($menusToSave as $m) {
-                $mName = $m['name'] ?? 'เมนูอาหาร';
-                $mCal = (int)($m['calories'] ?? 0);
-                $mDesc = $m['desc'] ?? '';
-                $ins_menu_stmt->bind_param("isis", $userId, $mName, $mCal, $mDesc);
-                $ins_menu_stmt->execute();
-            }
-        }
-        
-        // 2. บันทึกประวัติแชทลง chat_logs โดยใช้ |||MENUS||| เป็นตัวแบ่ง เพื่อให้หน้าเว็บดึงไปสร้างปุ่มได้
+        // บันทึกประวัติแชทลง chat_logs โดยใช้ |||MENUS||| เป็นตัวแบ่ง เพื่อให้หน้าเว็บดึงไปสร้างปุ่มได้
         $finalMessageToSave = $parsedData['chat_response'];
         if (!empty($menusToSave)) {
             $finalMessageToSave .= '|||MENUS|||' . json_encode($menusToSave, JSON_UNESCAPED_UNICODE);
