@@ -293,25 +293,41 @@ main {
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
           <?php
-          $diets = [
-            'normal'  => ['🍽️','ทั่วไป'],
-            'clean'   => ['🥗','คลีนฟู้ด'],
-            'keto'    => ['🥑','คีโต'],
-            'lowcarb' => ['🫛','โลว์คาร์บ'],
-            'vegan'   => ['🌱','มังสวิรัติ'],
-            'if'      => ['⏰','Intermittent F'],
+          // 1. กำหนดไอคอนเริ่มต้น (ถ้าแอดมินเพิ่มคีย์ใหม่นอกเหนือจากนี้ จะเป็นรูปแท็ก 🏷️ อัตโนมัติ)
+          $icon_map = [
+            'normal'  => '🍽️',
+            'clean'   => '🥗',
+            'keto'    => '🥑',
+            'lowcarb' => '🫛',
+            'vegan'   => '🌱',
+            'if'      => '⏰'
           ];
-          foreach ($diets as $val => [$icon, $label]):
-            $chk = in_array($val, $diet_arr_check) ? 'checked' : '';
+
+          // 2. ดึงข้อมูลรูปแบบการกินจากตาราง dietary_types
+          $d_query = "SELECT diet_key, title FROM dietary_types ORDER BY id ASC";
+          $d_res = $conn->query($d_query);
+
+          if ($d_res && $d_res->num_rows > 0) {
+              while($d_row = $d_res->fetch_assoc()) {
+                  $val = $d_row['diet_key'];
+                  $label = $d_row['title'];
+                  $icon = isset($icon_map[$val]) ? $icon_map[$val] : '🏷️';
+                  $chk = in_array($val, $diet_arr_check) ? 'checked' : '';
           ?>
           <label class="diet-option">
-            <input type="checkbox" name="diet[]" value="<?= $val ?>" <?= $chk ?>>
+            <input type="checkbox" name="diet[]" value="<?= htmlspecialchars($val) ?>" <?= $chk ?>>
             <div class="diet-tag">
               <div style="font-size:1.3rem;margin-bottom:4px;"><?= $icon ?></div>
-              <div style="font-size:.78rem;"><?= $label ?></div>
+              <div style="font-size:.78rem;"><?= htmlspecialchars($label) ?></div>
             </div>
           </label>
-          <?php endforeach; ?>
+          <?php 
+              }
+          } else {
+              // กรณีที่ฐานข้อมูลยังไม่มีข้อมูล ให้แสดงข้อความเตือน
+              echo "<div style='grid-column: span 3; font-size: 0.8rem; color: var(--muted); text-align: center; padding: 10px;'>กรุณาเพิ่มรูปแบบการกินในหน้าแอดมิน</div>";
+          }
+          ?>
         </div>
       </div>
 
