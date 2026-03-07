@@ -249,7 +249,7 @@ $menu_count = $menu_count ?? 0;
         ออนไลน์
       </div>
     </div>
-    <a href="logout.php" class="sb-logout" title="ออกจากระบบ" onclick="return confirm('ยืนยันการออกจากระบบ?')">
+    <a href="logout.php" class="sb-logout" title="ออกจากระบบ" onclick="confirmLogout(event, this.href)">
       <i class="fas fa-arrow-right-from-bracket"></i>
     </a>
   </div>
@@ -278,3 +278,29 @@ document.addEventListener('click', (e) => {
   }
 });
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function confirmLogout(event, url) {
+  event.preventDefault(); // หยุดการเปลี่ยนหน้าทันที
+  
+  Swal.fire({
+    title: 'ออกจากระบบ?',
+    text: "คุณต้องการออกจากระบบใช่หรือไม่?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626', // สีแดงปุ่มยืนยัน
+    cancelButtonColor: '#9ca3af', // สีเทาปุ่มยกเลิก
+    confirmButtonText: 'ใช่, ออกจากระบบ',
+    cancelButtonText: 'ยกเลิก'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      window.location.href = url; // ไปที่หน้า logout เมื่อกดตกลง
+    }
+  });
+}
+</script>
+<style>
+  /* บังคับให้ Alert ใช้ฟอนต์ Kanit เพื่อให้เข้ากับเว็บของคุณ */
+  .swal2-container { font-family: 'Kanit', sans-serif !important; }
+</style>

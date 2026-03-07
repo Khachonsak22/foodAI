@@ -103,9 +103,9 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
         <i class="fas fa-circle" style="font-size:6px !important;color:#4ade80;vertical-align:middle;margin-right:4px;"></i>ผู้ดูแลระบบ
       </div>
     </div>
-    <a href="../pages/logout.php" class="logout-btn" title="ออกจากระบบ">
-      <i class="fas fa-sign-out-alt"></i>
-    </a>
+    <a href="../pages/logout.php" class="logout-btn" title="ออกจากระบบ" onclick="confirmLogout(event, this.href)">
+  <i class="fas fa-sign-out-alt"></i>
+</a>
   </div>
 
 </aside>
@@ -335,3 +335,29 @@ function closeAdminSidebar() {
   if(overlay) overlay.classList.remove('show');
 }
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function confirmLogout(event, url) {
+  event.preventDefault(); // หยุดการเปลี่ยนหน้าทันที
+  
+  Swal.fire({
+    title: 'ออกจากระบบ?',
+    text: "คุณต้องการออกจากระบบใช่หรือไม่?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626', // สีแดงปุ่มยืนยัน
+    cancelButtonColor: '#9ca3af', // สีเทาปุ่มยกเลิก
+    confirmButtonText: 'ใช่, ออกจากระบบ',
+    cancelButtonText: 'ยกเลิก'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      window.location.href = url; // ไปที่หน้า logout เมื่อกดตกลง
+    }
+  });
+}
+</script>
+<style>
+  /* บังคับให้ Alert ใช้ฟอนต์ Kanit เพื่อให้เข้ากับเว็บของคุณ */
+  .swal2-container { font-family: 'Kanit', sans-serif !important; }
+</style>
