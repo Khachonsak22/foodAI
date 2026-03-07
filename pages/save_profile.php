@@ -15,13 +15,13 @@ $age = intval($_POST['age'] ?? 0);
 $weight = floatval($_POST['weight'] ?? 0);
 $height = floatval($_POST['height'] ?? 0);
 $activity = $_POST['activity_level'] ?? 'sedentary';
-$goal = $_POST['goal'] ?? 'maintain'; // รับค่าเป้าหมายมาแล้ว
+$goal = $_POST['goal'] ?? 'maintain'; // รับค่าเป้าหมาย
 
-// รับค่ารูปแบบการกิน (Array -> String)
+// รับค่ารูปแบบการกิน
 $diet_input = isset($_POST['diet']) ? $_POST['diet'] : []; 
 $diet = empty($diet_input) ? 'normal' : (is_array($diet_input) ? implode(", ", $diet_input) : $diet_input);
 
-// 2. จัดการข้อมูลโรคประจำตัว (Array -> String)
+// 2. จัดการข้อมูลโรคประจำตัว
 $diseases_arr = isset($_POST['diseases']) ? $_POST['diseases'] : [];
 if (!empty($_POST['other_disease_text'])) {
     $other_text = trim($_POST['other_disease_text']);
@@ -46,7 +46,7 @@ switch ($activity) {
 }
 $tdee = $bmr * $activity_multiplier;
 
-/// 4.ดึง "ค่าปรับแคลอรี่" (cal_adjust) จากตาราง goals ที่แอดมินตั้งค่าไว้
+// 4. 💥 ดึง "ค่าปรับแคลอรี่" (cal_adjust) จากตาราง goals
 $cal_adjust = 0;
 $goal_stmt = $conn->prepare("SELECT cal_adjust FROM goals WHERE goal_key = ?");
 $goal_stmt->bind_param("s", $goal);
@@ -56,17 +56,17 @@ if ($goal_res) {
     $cal_adjust = (int)$goal_res['cal_adjust'];
 }
 
-// คำนวณแคลอรี่เป้าหมายสุทธิ (เอา TDEE ไปบวกหรือลบด้วยค่าที่ดึงมา)
+// คำนวณแคลอรี่เป้าหมายสุทธิ
 $final_calories = $tdee + $cal_adjust;
 $daily_target = round($final_calories);
 
-// เช็คขั้นต่ำเพื่อความปลอดภัยตามหลักโภชนาการ (ผู้ชายไม่ควรต่ำกว่า 1500 / ผู้หญิงไม่ควรต่ำกว่า 1200)
+// 💥 เซฟตี้ลิมิต: ป้องกันแคลอรี่ต่ำเกินไปจนเสียสุขภาพ
 $min_cal = ($gender == 'male') ? 1500 : 1200;
 if ($daily_target < $min_cal) {
     $daily_target = $min_cal;
 }
 
-// 5. บันทึกลงฐานข้อมูล (เพิ่มคอลัมน์ goal_preference ลงไปในคำสั่ง)
+// 5. บันทึกลงฐานข้อมูล
 $sql = "INSERT INTO health_profiles 
         (user_id, daily_calorie_target, dietary_type, health_conditions, goal_preference, weight, height, age, gender, activity_level) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -83,22 +83,22 @@ $sql = "INSERT INTO health_profiles
 
 $stmt = $conn->prepare($sql);
 
-// ปรับ Type Binding ให้ตรงกับ 10 ตัวแปร (เพิ่มตัวแปร string สำหรับ goal_preference เข้าไป)
 $stmt->bind_param("iisssddiss", 
-    $user_id,       // i (int)
-    $daily_target,  // i (int)
-    $diet,          // s (string)
-    $diseases_str,  // s (string)
-    $goal,          // s (string) -> บันทึกค่า goal ลงฐานข้อมูล
-    $weight,        // d (double)
-    $height,        // d (double)
-    $age,           // i (int)
-    $gender,        // s (string)
-    $activity       // s (string)
+    $user_id,       // i 
+    $daily_target,  // i 
+    $diet,          // s 
+    $diseases_str,  // s 
+    $goal,          // s 
+    $weight,        // d 
+    $height,        // d 
+    $age,           // i 
+    $gender,        // s 
+    $activity       // s 
 );
 
 if ($stmt->execute()) {
     header("Location: dashboard.php");
+    exit();
 } else {
     echo "เกิดข้อผิดพลาด: " . $conn->error;
 }
