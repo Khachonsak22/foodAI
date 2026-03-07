@@ -60,7 +60,7 @@ if ($goal_res) {
 $final_calories = $tdee + $cal_adjust;
 $daily_target = round($final_calories);
 
-// 💥 เซฟตี้ลิมิต: ป้องกันแคลอรี่ต่ำเกินไปจนเสียสุขภาพ
+// เซฟตี้ลิมิต: ป้องกันแคลอรี่ต่ำเกินไปจนเสียสุขภาพ
 $min_cal = ($gender == 'male') ? 1500 : 1200;
 if ($daily_target < $min_cal) {
     $daily_target = $min_cal;
@@ -100,6 +100,6 @@ if ($stmt->execute()) {
     header("Location: dashboard.php");
     exit();
 } else {
-    echo "เกิดข้อผิดพลาด: " . $conn->error;
+    echo "เกิดข้อผิดพลาด...: " . $conn->error;
 }
 ?>
