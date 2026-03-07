@@ -110,7 +110,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .setting-item:last-child{border-bottom:none;}
 .btn{padding:8px 16px;border-radius:10px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
 .btn:hover{filter:brightness(0.95);}
-.hamburger{display:none;width:40px;height:40px;border-radius:10px;background:#fff;border:1.5px solid var(--bdr);align-items:center;justify-content:center;cursor:pointer;}
 
 /* Custom input style สำหรับฟอร์ม */
 .custom-input {
@@ -130,21 +129,22 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
-@media (max-width: 1024px){
-  .sidebar{width:70px;}
-  .sb-logo-text,.nav-item span:not(.ni){display:none;}
-  .sb-logo{justify-content:center;padding:20px 10px;}
-  .nav-item{justify-content:center;padding:10px;}
-  .page-wrap{margin-left:70px;}
+/*CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ*/
+.hamburger {
+  display: none;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #fff; border: 1px solid var(--bdr);
+  align-items: center; justify-content: center;
+  cursor: pointer; color: var(--txt); font-size: 1.1rem;
+  transition: all .2s; margin-right: 14px; flex-shrink: 0;
 }
-@media (max-width: 768px){
-  .hamburger{display:flex;}
-  .sidebar{transform:translateX(-100%);width:var(--sb-w);transition:transform .3s;}
-  .sidebar.open{transform:translateX(0);}
-  .page-wrap{margin-left:0;}
-  .topbar{padding:0 1rem;height:60px;}
-  .card{padding:16px;}
-  .setting-item{flex-direction:column;align-items:flex-start;}
+.hamburger:hover { background: var(--g50); color: var(--g600); border-color: var(--g300); }
+
+@media (max-width: 1024px) {
+  .hamburger { display: flex; }
+  .page-wrap { margin-left: 0; }
+  .topbar { padding: 0 1.25rem; }
+  main { padding: 1.5rem 1rem !important; }
 }
 </style>
 </head>

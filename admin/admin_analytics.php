@@ -79,13 +79,22 @@ $active_trend = $conn->query("
         .chart-container-circle { position: relative; height: 280px; width: 100%; margin: auto; }
         .chart-container-line { position: relative; height: 300px; width: 100%; }
         
-        @media (max-width: 1024px){
-            .sidebar{width:70px;}
-            .page-wrap{margin-left:70px;}
+        /*CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ*/
+        .hamburger {
+        display: none;
+        width: 40px; height: 40px; border-radius: 10px;
+        background: #fff; border: 1px solid var(--bdr);
+        align-items: center; justify-content: center;
+        cursor: pointer; color: var(--txt); font-size: 1.1rem;
+        transition: all .2s; margin-right: 14px; flex-shrink: 0;
         }
-        @media (max-width: 768px){
-            .sidebar{transform:translateX(-100%);}
-            .page-wrap{margin-left:0;}
+        .hamburger:hover { background: var(--g50); color: var(--g600); border-color: var(--g300); }
+
+        @media (max-width: 1024px) {
+        .hamburger { display: flex; }
+        .page-wrap { margin-left: 0; }
+        .topbar { padding: 0 1.25rem; }
+        main { padding: 1.5rem 1rem !important; }
         }
     </style>
 </head>
