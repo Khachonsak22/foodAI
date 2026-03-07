@@ -148,9 +148,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .page-wrap{margin-left:var(--sb-w);flex:1;position:relative;z-index:1;min-width:0;transition: margin-left 0.3s ease;}
 .topbar{height:70px;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 2.5rem;gap:14px;position:sticky;top:0;z-index:50;}
 
-/* --------------------------------------------------------------------------
-   ✅ จุดที่แก้ไข 1: เพิ่ม CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ
-   -------------------------------------------------------------------------- */
+/*CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ*/
 .hamburger {
   display: none;
   width: 40px; height: 40px; border-radius: 10px;
@@ -167,7 +165,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   .topbar { padding: 0 1.25rem; }
   main { padding: 1.5rem 1rem !important; }
 }
-/* -------------------------------------------------------------------------- */
 
 /* ปรับปรุงดีไซน์ตาราง */
 .card { background:#fff; border:none; border-radius:24px; padding:28px; box-shadow:0 10px 30px rgba(0,0,0,.03); margin-bottom: 2rem;}
@@ -438,7 +435,7 @@ $(document).ready(function() {
     order: [[0, 'desc']],
     language: {
       search: "",
-      searchPlaceholder: "🔍 ค้นหาผู้ใช้...",
+      searchPlaceholder: "ค้นหาผู้ใช้...",
       lengthMenu: "แสดง _MENU_ รายการ",
       info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ คน",
       infoEmpty: "ไม่มีข้อมูล",

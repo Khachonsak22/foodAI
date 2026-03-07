@@ -127,14 +127,22 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .tag-label.disease { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
 .tag-label.allergy { background: #eff6ff; border-color: #bae6fd; color: #0284c7; }
 
-@media (max-width:1024px){
-  .page-wrap{margin-left:0;}
-  .hamburger{display:flex;}
+/*CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ*/
+.hamburger {
+  display: none;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #fff; border: 1px solid var(--bdr);
+  align-items: center; justify-content: center;
+  cursor: pointer; color: var(--txt); font-size: 1.1rem;
+  transition: all .2s; margin-right: 14px; flex-shrink: 0;
 }
-@media (max-width:768px){
-  .topbar{padding:0 1rem;}
-  main{padding:1.5rem 1rem;}
-  .card-header-custom{flex-direction:column;gap:1rem;align-items:flex-start;}
+.hamburger:hover { background: var(--g50); color: var(--g600); border-color: var(--g300); }
+
+@media (max-width: 1024px) {
+  .hamburger { display: flex; }
+  .page-wrap { margin-left: 0; }
+  .topbar { padding: 0 1.25rem; }
+  main { padding: 1.5rem 1rem !important; }
 }
 </style>
 </head>

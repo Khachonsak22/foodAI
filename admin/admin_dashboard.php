@@ -138,32 +138,22 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 .badge{font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:8px;display:inline-block;}
 
-@media (max-width: 1024px){
-  .sidebar{width:70px;}
-  .sb-logo-text,.sb-logo-sub,.nav-item span:not(.ni),.sb-user div{display:none;}
-  .sb-logo{justify-content:center;padding:20px 10px;}
-  .nav-item{justify-content:center;padding:10px;}
-  .page-wrap{margin-left:70px;}
-  .topbar{padding:0 1.5rem;}
-  .stat-card{font-size:.9rem;}
+/*CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ*/
+.hamburger {
+  display: none;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #fff; border: 1px solid var(--bdr);
+  align-items: center; justify-content: center;
+  cursor: pointer; color: var(--txt); font-size: 1.1rem;
+  transition: all .2s; margin-right: 14px; flex-shrink: 0;
 }
+.hamburger:hover { background: var(--g50); color: var(--g600); border-color: var(--g300); }
 
-@media (max-width: 768px){
-  .sidebar{transform:translateX(-100%);width:var(--sb-w);transition:transform .3s;}
-  .sidebar.open{transform:translateX(0);}
-  .page-wrap{margin-left:0;}
-  .topbar{padding:0 1rem;}
-  body::before{background-size:20px 20px;}
-  main{padding:1.5rem 1rem!important;}
-  .stat-val{font-size:1.4rem!important;}
-}
-
-.hamburger{display:none;width:40px;height:40px;border-radius:10px;background:#fff;border:1.5px solid var(--bdr);align-items:center;justify-content:center;cursor:pointer;transition:all .2s;}
-.hamburger:hover{border-color:var(--g300);background:var(--g50);}
-.hamburger i{color:var(--sub);font-size:.9rem;}
-
-@media (max-width: 768px){
-  .hamburger{display:flex;}
+@media (max-width: 1024px) {
+  .hamburger { display: flex; }
+  .page-wrap { margin-left: 0; }
+  .topbar { padding: 0 1.25rem; }
+  main { padding: 1.5rem 1rem !important; }
 }
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
