@@ -19,12 +19,18 @@ $firstName = $u_data['first_name'] ?? 'User';
 $lastName  = $u_data['last_name']  ?? '';
 $initials  = mb_strtoupper(mb_substr($firstName,0,1)).mb_strtoupper(mb_substr($lastName,0,1));
 
-/* ── Calorie target ── */
-$hp = $conn->prepare("SELECT daily_calorie_target FROM health_profiles WHERE user_id = ?");
+/* ── ✅ Calorie target & Goal ── */
+$hp = $conn->prepare("
+    SELECT hp.daily_calorie_target, COALESCE(g.title, 'ไม่ระบุเป้าหมาย') as goal_title 
+    FROM health_profiles hp 
+    LEFT JOIN goals g ON hp.goal_preference = g.goal_key 
+    WHERE hp.user_id = ?
+");
 $hp->bind_param("i", $user_id);
 $hp->execute();
 $hp_row    = $hp->get_result()->fetch_assoc();
 $targetCal = $hp_row['daily_calorie_target'] ?? 2000;
+$goalTitle = $hp_row['goal_title'] ?? 'ไม่ระบุเป้าหมาย';
 
 /* ── Selected date ── */
 $selected_date = isset($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date'])
@@ -117,13 +123,16 @@ $log_stmt->bind_param("is", $user_id, $selected_date);
 $log_stmt->execute();
 $recipe_logs = $log_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-/* ── Summary ── */
-$ai_cal    = array_sum(array_column($ai_menus,    'calories'));
-$rec_cal   = array_sum(array_column($recipe_logs, 'calories'));
-$total_cal = $rec_cal; // คำนวณจากที่กินจริงเท่านั้น (ตัด AI ออก)
-$cal_pct   = $targetCal > 0 ? min(100, round($total_cal / $targetCal * 100)) : 0;
-$remaining = max(0, $targetCal - $total_cal);
-$ring_off  = round(314 * (1 - $cal_pct / 100));
+/* ── ✅ Summary (Over-Calorie logic added) ── */
+$ai_cal      = array_sum(array_column($ai_menus,    'calories'));
+$rec_cal     = array_sum(array_column($recipe_logs, 'calories'));
+$total_cal   = $rec_cal; // คำนวณจากที่กินจริงเท่านั้น (ตัด AI ออก)
+$cal_pct_raw = $targetCal > 0 ? round($total_cal / $targetCal * 100) : 0;
+$cal_pct     = min(100, $cal_pct_raw);
+$bar_width   = min($cal_pct_raw, 100);
+$remaining   = max(0, $targetCal - $total_cal);
+$over        = max(0, $total_cal - $targetCal);
+$ring_off    = round(314 * (1 - min($cal_pct_raw, 100) / 100));
 
 /* ── Group recipe logs by meal_type ── */
 $meal_types = [
@@ -144,7 +153,6 @@ for ($i = 6; $i >= 0; $i--) {
     $lbl = date('D', strtotime($d));
     $lbl_th = ['Mon'=>'จ','Tue'=>'อ','Wed'=>'พ','Thu'=>'พฤ','Fri'=>'ศ','Sat'=>'ส','Sun'=>'อา'][$lbl] ?? $lbl;
 
-    // คำนวณเฉพาะเมนูที่บันทึกกินจริงในแต่ละวัน
     $s2  = $conn->prepare("SELECT COALESCE(SUM(r.calories),0) as c FROM meal_logs ml JOIN recipes r ON ml.recipe_id=r.id WHERE ml.user_id=? AND DATE(ml.logged_at)=?");
     $s2->bind_param("is", $user_id, $d);
     $s2->execute();
@@ -217,12 +225,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .tb-back{width:38px;height:38px;border-radius:11px;background:#fff;border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:var(--sub);text-decoration:none;font-size:.8rem;transition:all .18s;flex-shrink:0;}
 .tb-back:hover{background:var(--g50);border-color:var(--g200);color:var(--g600);}
 
-main { 
-    padding: 2rem 2.5rem 3.5rem; 
-    width: 100%; 
-    max-width: 100%; 
-    margin: 0 auto; 
-}
+main { padding: 2rem 2.5rem 3.5rem; width: 100%; max-width: 100%; margin: 0 auto; }
 
 /* ─── Animations ─── */
 @keyframes slideUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
@@ -231,25 +234,12 @@ main {
 .rv4{animation-delay:.24s;}.rv5{animation-delay:.31s;}.rv6{animation-delay:.38s;}
 
 /* ─── Cards ─── */
-.card {
-    background: var(--card);
-    border: 1px solid var(--bdr);
-    border-radius: 20px;
-    transition: box-shadow .2s, transform .2s, border-color .2s;
-}
-.card:hover {
-    transform: translateY(-3px);
-    /* ผสมเงาสีเขียวและสีฟ้าอมเขียว */
-    box-shadow: 0 12px 25px -5px rgba(21, 128, 61, 0.1), 
-                0 8px 10px -6px rgba(13, 148, 136, 0.15); 
-    border-color: rgba(13, 148, 136, 0.35); /* กรอบเป็นสี #0d9488 */
-}
+.card { background: var(--card); border: 1px solid var(--bdr); border-radius: 20px; transition: box-shadow .2s, transform .2s, border-color .2s; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 12px 25px -5px rgba(21, 128, 61, 0.1), 0 8px 10px -6px rgba(13, 148, 136, 0.15); border-color: rgba(13, 148, 136, 0.35); }
 
 /* ─── Calorie ring ─── */
 .ring-bg{fill:none;stroke:var(--bdr);stroke-width:9;}
-.ring-fill{fill:none;stroke-width:9;stroke-linecap:round;stroke:url(#gGrad);
-  stroke-dasharray:314;stroke-dashoffset:<?php echo $ring_off;?>;
-  transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1);}
+.ring-fill{fill:none;stroke-width:9;stroke-linecap:round;stroke-dasharray:314;stroke-dashoffset:<?php echo $ring_off;?>; transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1);}
 .ring-wrap{position:relative;width:110px;height:110px;flex-shrink:0;}
 .ring-wrap svg{transform:rotate(-90deg);}
 .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
@@ -272,7 +262,7 @@ main {
 
 /* ─── Progress bar ─── */
 .pbar{height:6px;background:rgba(34,197,94,.1);border-radius:99px;overflow:hidden;}
-.pbar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--g400),var(--t400));box-shadow:0 0 8px rgba(74,222,128,.4);transition:width 1.1s cubic-bezier(.4,0,.2,1);}
+.pbar-fill{height:100%;border-radius:99px;transition:width 1.1s cubic-bezier(.4,0,.2,1);}
 
 /* ─── Meal section ─── */
 .meal-section{background:var(--card);border:1px solid var(--bdr);border-radius:18px;overflow:hidden;transition:box-shadow .2s;}
@@ -338,18 +328,9 @@ main {
 .empty{border:2px dashed var(--g200);border-radius:14px;text-align:center;padding:2rem 1rem;color:var(--muted);}
 
 /* ── สไตล์ปุ่ม Hamburger Menu ── */
-.menu-toggle {
-  display: none;
-  width: 38px; height: 38px; border-radius: 11px;
-  background: white; border: 1px solid var(--bdr);
-  align-items: center; justify-content: center;
-  color: var(--sub); font-size: 0.9rem; cursor: pointer;
-}
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; }
 @media (max-width: 1024px) {
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.show { transform: translateX(0); }
   .page-wrap { margin-left: 0 !important; }
   .menu-toggle { display: flex; }
@@ -419,27 +400,35 @@ main {
                     <stop offset="0%" stop-color="#4ade80"/>
                     <stop offset="100%" stop-color="#2dd4bf"/>
                   </linearGradient>
+                  <linearGradient id="rGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fca5a5"/>
+                    <stop offset="100%" stop-color="#ef4444"/>
+                  </linearGradient>
                 </defs>
                 <circle class="ring-bg" cx="60" cy="60" r="50"/>
-                <circle class="ring-fill" cx="60" cy="60" r="50"/>
+                <circle class="ring-fill" cx="60" cy="60" r="50" style="stroke: url(#<?= $over > 0 ? 'rGrad' : 'gGrad' ?>);" />
               </svg>
               <div class="ring-center">
-                <span style="font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;color:var(--g600);line-height:1;"><?= $cal_pct ?><span style="font-size:.55rem;font-family:'Kanit',sans-serif;font-weight:400;color:var(--muted);">%</span></span>
-                <span style="font-size:.54rem;color:var(--muted);margin-top:2px;">บรรลุแล้ว</span>
+                <span style="font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;color:<?= $over > 0 ? '#ef4444' : 'var(--g600)' ?>;line-height:1;"><?= $cal_pct_raw ?><span style="font-size:.55rem;font-family:'Kanit',sans-serif;font-weight:400;color:var(--muted);">%</span></span>
+                <span style="font-size:.54rem;color:var(--muted);margin-top:2px;"><?= $over > 0 ? 'เกินเป้า' : 'บรรลุแล้ว' ?></span>
               </div>
             </div>
             <div style="flex:1;min-width:0;">
-              <div style="font-family:'Nunito',sans-serif;font-size:1.85rem;font-weight:800;color:var(--txt);line-height:1;">
+              <div style="font-family:'Nunito',sans-serif;font-size:1.85rem;font-weight:800;color:<?= $over > 0 ? '#ef4444' : 'var(--txt)' ?>;line-height:1;">
                 <?= number_format($total_cal) ?>
                 <span style="font-size:.75rem;font-weight:600;font-family:'Kanit',sans-serif;color:var(--muted);">kcal</span>
               </div>
-              <p style="font-size:.7rem;color:var(--sub);margin-top:6px;">เป้าหมาย <span style="color:var(--g600);font-weight:700;"><?= number_format($targetCal) ?> kcal</span></p>
+              <p style="font-size:.7rem;color:var(--sub);margin-top:6px;">เป้าหมาย: <?= htmlspecialchars($goalTitle) ?> <span style="color:var(--g600);font-weight:700;"><?= number_format($targetCal) ?> kcal</span></p>
               <div style="height:5px;background:var(--bdr);border-radius:99px;overflow:hidden;margin-top:12px;">
-                <div style="width:<?= $cal_pct ?>%;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--g400),var(--t400));box-shadow:0 0 8px rgba(74,222,128,.4);"></div>
+                <div style="width:<?= $bar_width ?>%;height:100%;border-radius:99px;<?= $over > 0 ? 'background:linear-gradient(90deg, #fca5a5, #ef4444);box-shadow:0 0 8px rgba(239,68,68,.4);' : 'background:linear-gradient(90deg,var(--g400),var(--t400));box-shadow:0 0 8px rgba(74,222,128,.4);' ?>"></div>
               </div>
               <div style="display:flex;justify-content:space-between;margin-top:8px;">
-                <span style="font-size:.66rem;color:var(--sub);">ทานไปแล้ว <span style="color:var(--g600);font-weight:600;"><?= number_format($rec_cal) ?></span> kcal</span>
-                <span style="font-size:.66rem;color:var(--sub);">เหลือ <span style="color:var(--t600);font-weight:700;"><?= number_format($remaining) ?></span></span>
+                <span style="font-size:.66rem;color:var(--sub);">ทานไปแล้ว <span style="color:<?= $over > 0 ? '#ef4444' : 'var(--g600)' ?>;font-weight:600;"><?= number_format($rec_cal) ?></span> kcal</span>
+                <?php if($over > 0): ?>
+                  <span style="font-size:.66rem;color:var(--sub);">เกิน <span style="color:#ef4444;font-weight:700;">+<?= number_format($over) ?></span></span>
+                <?php else: ?>
+                  <span style="font-size:.66rem;color:var(--sub);">เหลือ <span style="color:var(--t600);font-weight:700;"><?= number_format($remaining) ?></span></span>
+                <?php endif; ?>
               </div>
             </div>
           </div>
@@ -621,15 +610,21 @@ main {
               <span style="font-size:.72rem;color:var(--g700);font-weight:600;">แคลอรี่ที่ทานไป</span>
               <span style="font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--g600);"><?= number_format($total_cal) ?> kcal</span>
             </div>
+
             <?php if ($remaining > 0): ?>
             <div style="font-size:.7rem;color:var(--muted);text-align:center;">
               เหลือช่องว่าง <span style="color:var(--t600);font-weight:700;"><?= number_format($remaining) ?> kcal</span> ก่อนถึงเป้าหมาย
             </div>
-            <?php elseif ($total_cal >= $targetCal): ?>
+            <?php elseif ($over > 0): ?>
+            <div style="font-size:.7rem;color:#ef4444;font-weight:600;text-align:center;background:#fee2e2;border-radius:10px;padding:7px;">
+              ระวัง! คุณทานเกินเป้าหมายไป <?= number_format($over) ?> kcal
+            </div>
+            <?php else: ?>
             <div style="font-size:.7rem;color:var(--g600);font-weight:600;text-align:center;background:var(--g50);border-radius:10px;padding:7px;">
-              ถึงเป้าหมายแล้ววันนี้!
+              ถึงเป้าหมายแล้วพอดีเป๊ะ!
             </div>
             <?php endif; ?>
+
           </div>
         </div>
       </div>
@@ -764,7 +759,6 @@ async function submitLog() {
   fd.append('recipe_id', selectedRecipeId);
   fd.append('meal_type', mt);
   
-  // เพิ่มการส่งวันที่ปัจจุบันหน้าจอ เพื่อให้บันทึกตรงวัน
   const urlParams = new URLSearchParams(window.location.search);
   const selectedDate = urlParams.get('date') || '<?= $today ?>';
   fd.append('log_date', selectedDate);
@@ -815,7 +809,7 @@ async function deleteAiMenu(menuId, rowId) {
   }
 }
 
-function updateTotals() { /* reload for now */ location.reload(); }
+function updateTotals() { location.reload(); }
 </script>
 </body>
 </html>
