@@ -453,13 +453,13 @@ $(document).ready(function() {
     buttons: [
       {
         extend: "excel",
-        text: '<i class="fas fa-file-excel"></i> ส่งออก Excel',
+        text: '<i class="fas fa-file-excel"></i> Excel',
         exportOptions: { columns: ":not(:last-child)" },
         className: 'dt-button'
       },
       {
         extend: "csv",
-        text: '<i class="fas fa-file-csv"></i> ส่งออก CSV',
+        text: '<i class="fas fa-file-csv"></i> CSV',
         charset: 'utf-8',
         bom: true,
         exportOptions: { columns: ":not(:last-child)" },
