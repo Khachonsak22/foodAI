@@ -41,15 +41,37 @@ $active_users = $conn->query("SELECT COUNT(DISTINCT user_id) as count FROM meal_
 // Total AI chats
 $total_chats = $conn->query("SELECT COUNT(*) as count FROM chat_logs WHERE sender = 'user'")->fetch_assoc()['count'];
 
-// Popular health conditions
-$health_conditions = $conn->query("
-    SELECT health_conditions, COUNT(*) as count 
+// ==========================================
+// 1. โรคประจำตัวที่พบบ่อย (ดึงและแยกข้อมูลจริงตามคอมม่า)
+// ==========================================
+$hc_query = $conn->query("
+    SELECT health_conditions 
     FROM health_profiles 
-    WHERE health_conditions IS NOT NULL AND health_conditions != '' 
-    GROUP BY health_conditions 
-    ORDER BY count DESC 
-    LIMIT 5
-")->fetch_all(MYSQLI_ASSOC);
+    WHERE health_conditions IS NOT NULL 
+    AND health_conditions != ''
+");
+
+$hc_counts = [];
+while ($row = $hc_query->fetch_assoc()) {
+    $conditions = explode(',', $row['health_conditions']); // จับแยกด้วยลูกน้ำ
+    foreach ($conditions as $c) {
+        $c = trim($c);
+        // กรองคำที่แปลว่า "ไม่มี" ทิ้ง เพื่อให้แสดงเฉพาะโรคจริงๆ ที่มีความหมาย
+        if ($c !== '' && !in_array(mb_strtolower($c, 'UTF-8'), ['none', 'ไม่มี', 'ไม่มีโรคประจำตัว', 'ไม่มีโรค', '-'])) {
+            if (!isset($hc_counts[$c])) {
+                $hc_counts[$c] = 0;
+            }
+            $hc_counts[$c]++;
+        }
+    }
+}
+arsort($hc_counts); // เรียงลำดับจากคนเป็นเยอะสุดไปน้อยสุด
+
+$health_conditions = [];
+foreach ($hc_counts as $name => $count) {
+    $health_conditions[] = ['health_conditions' => $name, 'count' => $count];
+    if (count($health_conditions) >= 5) break; // ดึงมาแค่ 5 อันดับแรก
+}
 
 // Recent users (last 10)
 $recent_users = $conn->query("
@@ -61,13 +83,13 @@ $recent_users = $conn->query("
     LIMIT 10
 ")->fetch_all(MYSQLI_ASSOC);
 
-// Popular recipes
+// ==========================================
+// 2. เมนูยอดนิยม (ดึงจากยอด view_count ในตาราง recipes)
+// ==========================================
 $popular_recipes = $conn->query("
-    SELECT r.id, r.title, r.calories, COUNT(ml.id) as log_count
-    FROM recipes r
-    LEFT JOIN meal_logs ml ON r.id = ml.recipe_id
-    GROUP BY r.id
-    ORDER BY log_count DESC
+    SELECT id, title, calories, view_count 
+    FROM recipes 
+    ORDER BY view_count DESC 
     LIMIT 5
 ")->fetch_all(MYSQLI_ASSOC);
 ?>
@@ -163,7 +185,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 <?php include '../includes/sidebar_admin.php' ?>
 
-<!-- MAIN -->
 <div class="page-wrap">
   
   <header class="topbar">
@@ -178,7 +199,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   
   <main style="padding:2rem 2.5rem 3.5rem;">
     
-    <!-- STATS GRID -->
     <div class="rv rv1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:2rem;">
       
       <div class="stat-card">
@@ -213,10 +233,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       
     </div>
     
-    <!-- ROW 1 -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:2rem;">
       
-      <!-- Recent Users -->
       <div class="rv rv2 card">
         <h2 style="font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--txt);margin-bottom:16px;">
           <i class="fas fa-user-plus" style="color:var(--g500);margin-right:8px;"></i> ผู้ใช้ล่าสุด
@@ -246,7 +264,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
         </div>
       </div>
       
-      <!-- Popular Recipes -->
       <div class="rv rv2 card">
         <h2 style="font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--txt);margin-bottom:16px;">
           <i class="fas fa-fire" style="color:#f97316;margin-right:8px;"></i> เมนูยอดนิยม
@@ -263,7 +280,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
                 <?= htmlspecialchars($r['title']) ?>
               </div>
               <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">
-                <?= $r['calories'] ?> kcal • <?= $r['log_count'] ?> ครั้ง
+                <?= $r['calories'] ?> kcal • <?= $r['view_count'] ?> ครั้ง
               </div>
             </div>
           </div>
@@ -273,7 +290,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       
     </div>
     
-    <!-- Health Conditions -->
     <div class="rv rv3 card">
       <h2 style="font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--txt);margin-bottom:16px;">
         <i class="fas fa-heartbeat" style="color:#dc2626;margin-right:8px;"></i> โรคประจำตัวที่พบบ่อย
