@@ -179,6 +179,13 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 }
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
+
+.tb-date {
+  font-size: .72rem; color: var(--muted); font-weight: 400;
+  display: flex; align-items: center; gap: 6px;
+  margin-left: auto;
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -194,6 +201,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     <div>
       <div style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;color:var(--txt);">Dashboard</div>
       <div style="font-size:.72rem;color:var(--muted);">ภาพรวมระบบ FoodAI</div>
+    </div>
+    <div class="tb-date">
+      <i class="fas fa-calendar-days" style="color:var(--g500);font-size:.75rem;"></i>
+      <?php echo date('l, j F Y'); ?>
     </div>
   </header>
   
