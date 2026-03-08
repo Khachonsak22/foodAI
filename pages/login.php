@@ -121,6 +121,27 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .footer p{font-size:.75rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;}
 .footer i{color:var(--g500);}
 
+/* SCROLLBAR */
+::-webkit-scrollbar {
+    width: 6px; /* ความกว้างของ scrollbar แนวตั้ง */
+    height: 6px; /* ความสูงของ scrollbar แนวนอน (ถ้ามี) */
+}
+::-webkit-scrollbar-track {
+    background: transparent; /* สีพื้นหลังแทร็ก */
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* สีของแถบเลื่อนปกติ */
+    border-radius: 10px; /* ความโค้งมนของแถบเลื่อน */
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--g500, #22c55e); /* เปลี่ยนเป็นสีเขียวของเว็บเวลาเอาเมาส์ชี้ */
+}
+/* รองรับเว็บบราวเซอร์ Firefox */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
 @media (max-width:520px){
   .card{padding:2.5rem 2rem;}
   .title{font-size:1.8rem;}
