@@ -96,6 +96,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>เพิ่มสูตรอาหาร — Admin</title>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -127,7 +132,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .tag-label.disease { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
 .tag-label.allergy { background: #eff6ff; border-color: #bae6fd; color: #0284c7; }
 
-/*CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ*/
+/* CSS สำหรับปุ่ม Hamburger และ Responsive บนมือถือ */
 .hamburger {
   display: none;
   width: 40px; height: 40px; border-radius: 10px;
@@ -137,6 +142,63 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   transition: all .2s; margin-right: 14px; flex-shrink: 0;
 }
 .hamburger:hover { background: var(--g50); color: var(--g600); border-color: var(--g300); }
+
+/* ==========================================
+   ตกแต่งไลบรารี Select2 ให้เข้ากับธีมเว็บ 
+   ========================================== */
+.select2-container--default .select2-selection--single {
+  height: 48px; /* ให้สูงเท่ากับ input ปกติ */
+  padding: 10px 14px;
+  border: 1.5px solid var(--bdr);
+  border-radius: 12px;
+  font-family: 'Kanit', sans-serif;
+  font-size: .9rem;
+  background: var(--g50);
+  outline: none;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+.select2-container--default.select2-container--open .select2-selection--single {
+  border-color: var(--g400);
+  box-shadow: 0 0 0 3px rgba(74,222,128,.12);
+  background: #fff;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  padding-left: 0;
+  color: var(--txt);
+  line-height: normal;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 100%;
+  right: 12px;
+}
+.select2-dropdown {
+  border: 1.5px solid var(--g400);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(34,197,94,0.15);
+  font-family: 'Kanit', sans-serif;
+  font-size: .9rem;
+  overflow: hidden;
+  z-index: 9999;
+}
+.select2-search--dropdown { padding: 10px; }
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  border: 1.5px solid var(--bdr);
+  border-radius: 8px;
+  padding: 8px 12px;
+  outline: none;
+  font-family: 'Kanit', sans-serif;
+  transition: border-color 0.2s;
+}
+.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+  border-color: var(--g500);
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: var(--g500);
+  color: white;
+}
+.select2-results__option { padding: 8px 12px; }
 
 @media (max-width: 1024px) {
   .hamburger { display: flex; }
@@ -152,6 +214,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 <div class="page-wrap">
   <header class="topbar">
+    <button class="hamburger"><i class="fas fa-bars"></i></button>
     <div style="flex:1; display:flex; align-items:center; gap:15px;">
       <a href="admin_recipes.php" class="btn-back"><i class="fas fa-arrow-left"></i> กลับ</a>
       <div>
@@ -198,18 +261,58 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
         </div>
 
         <div class="form-group" style="margin-top:10px; border-top:1px solid var(--bdr); padding-top:20px;">
-          <label class="form-label" style="font-size:1rem; color:var(--g700);"><i class="fas fa-tags"></i> แท็กเมนูอาหาร (เลือกได้หลายข้อ)</label>
-          <p style="font-size:.75rem; color:var(--muted); margin-bottom:12px;">เลือกแท็กเพื่อให้ระบบคัดกรองเมนูให้ผู้ใช้อย่างแม่นยำ</p>
+          <label class="form-label" style="font-size:1rem; color:var(--g700);"><i class="fas fa-tags"></i> แท็กคุณสมบัติของเมนู</label>
+          <p style="font-size:.75rem; color:var(--muted); margin-bottom:16px;">เลือกแท็กเพื่อให้ระบบจับคู่และคัดกรองเมนูให้ผู้ใช้อย่างแม่นยำ</p>
           
-          <div class="tag-checkbox-group">
-            <?php foreach($tags_list as $t): 
-                $is_allergy = (mb_strpos($t['name'], 'ไม่มี') === 0);
-            ?>
-              <label class="tag-label <?= $is_allergy ? 'allergy' : 'disease' ?>">
-                <input type="checkbox" name="tags[]" value="<?= $t['id'] ?>" style="accent-color: <?= $is_allergy ? '#0284c7' : '#059669' ?>;">
-                <?= htmlspecialchars($t['name']) ?>
-              </label>
-            <?php endforeach; ?>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            
+            <div style="background: #fff; border: 1px solid #d1fae5; border-radius: 16px; padding: 18px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.05);">
+                <div style="font-family:'Nunito', sans-serif; font-weight:800; font-size:1rem; color:#059669; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+                    <div style="width:32px; height:32px; border-radius:10px; background:#d1fae5; display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    เหมาะสำหรับโรคประจำตัว
+                </div>
+                <div class="tag-checkbox-group">
+                    <?php foreach($tags_list as $t):
+                        $name_check = mb_strtolower($t['name'], 'UTF-8');
+                        // เช็คคีย์เวิร์ดที่เกี่ยวกับการแพ้อาหาร
+                        $is_allergy = (mb_strpos($name_check, 'แพ้') !== false || mb_strpos($name_check, 'ไม่มี') !== false || mb_strpos($name_check, 'ปราศจาก') !== false || mb_strpos($name_check, 'free') !== false);
+                        
+                        // ถ้าเป็นแท็กเกี่ยวกับการแพ้ ให้ข้ามไปกล่องที่ 2
+                        if ($is_allergy) continue; 
+                    ?>
+                      <label class="tag-label disease">
+                        <input type="checkbox" name="tags[]" value="<?= $t['id'] ?>" style="accent-color: #059669;">
+                        <?= htmlspecialchars($t['name']) ?>
+                      </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div style="background: #fff; border: 1px solid #e0f2fe; border-radius: 16px; padding: 18px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.05);">
+                <div style="font-family:'Nunito', sans-serif; font-weight:800; font-size:1rem; color:#0284c7; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+                    <div style="width:32px; height:32px; border-radius:10px; background:#e0f2fe; display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    สิ่งที่แพ้ / ปราศจากสารภูมิแพ้
+                </div>
+                <div class="tag-checkbox-group">
+                    <?php foreach($tags_list as $t):
+                        $name_check = mb_strtolower($t['name'], 'UTF-8');
+                        $is_allergy = (mb_strpos($name_check, 'แพ้') !== false || mb_strpos($name_check, 'ไม่มี') !== false || mb_strpos($name_check, 'ปราศจาก') !== false || mb_strpos($name_check, 'free') !== false);
+                        
+                        // ดึงมาแสดงเฉพาะแท็กที่เกี่ยวกับการแพ้อาหาร
+                        if (!$is_allergy) continue; 
+                    ?>
+                      <label class="tag-label allergy">
+                        <input type="checkbox" name="tags[]" value="<?= $t['id'] ?>" style="accent-color: #0284c7;">
+                        <?= htmlspecialchars($t['name']) ?>
+                      </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
           </div>
         </div>
 
@@ -238,8 +341,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 <script>
 // รับข้อมูลวัตถุดิบทั้งหมดจาก PHP มาไว้ในตัวแปร JS
 const ingredientsData = <?php echo json_encode($ingredients_list, JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+let rowIdCounter = 0; // ตัวแปรสำหรับสร้าง ID ไม่ซ้ำให้ช่องค้นหาแต่ละอัน
 
 function addIngredientRow() {
+    rowIdCounter++;
     const container = document.getElementById('ingredients_container');
     const row = document.createElement('div');
     row.style.display = 'flex';
@@ -247,25 +352,40 @@ function addIngredientRow() {
     row.style.marginBottom = '12px';
     row.style.alignItems = 'center';
 
-    // สร้าง Select Dropdown
-    let selectHTML = '<select name="ingredient_id[]" class="form-input" style="flex:2; padding:10px 14px;" required>';
-    selectHTML += '<option value="">-- เลือกวัตถุดิบ --</option>';
+    const selectId = 'ing_select_' + rowIdCounter;
+
+    // สร้าง Select Dropdown (เอาคลาส form-input เดิมออก เพื่อให้ไลบรารีคุมแทน)
+    let selectHTML = `<select name="ingredient_id[]" id="${selectId}" required>`;
+    selectHTML += '<option value="">-- ค้นหา/เลือกวัตถุดิบ --</option>';
     ingredientsData.forEach(ing => {
         selectHTML += `<option value="${ing.id}">${ing.name}</option>`;
     });
     selectHTML += '</select>';
 
-    // สร้าง Input สำหรับ Amount และ Unit
+    // สร้าง Input สำหรับ Amount และ Unit โดยเอา Select ไปครอบด้วย div ที่มี flex
     row.innerHTML = `
-        ${selectHTML}
-        <input type="number" step="0.01" name="amount[]" placeholder="ปริมาณ" required class="form-input" style="flex:1; padding:10px 14px;">
-        <input type="text" name="unit[]" placeholder="หน่วย (เช่น กรัม, ฟอง)" required class="form-input" style="flex:1; padding:10px 14px;">
-        <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; width:44px; height:44px; border-radius:12px; cursor:pointer; flex-shrink:0; transition:all .2s;">
+        <div style="flex:2; min-width:180px;">
+            ${selectHTML}
+        </div>
+        <input type="number" step="0.01" name="amount[]" placeholder="ปริมาณ" required class="form-input" style="flex:1; padding:12px 14px; min-width:80px;">
+        <input type="text" name="unit[]" placeholder="หน่วย (เช่น กรัม)" required class="form-input" style="flex:1; padding:12px 14px; min-width:80px;">
+        <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; width:48px; height:48px; border-radius:12px; cursor:pointer; flex-shrink:0; transition:all .2s; display:flex; align-items:center; justify-content:center;">
             <i class="fas fa-trash"></i>
         </button>
     `;
     
     container.appendChild(row);
+
+    // ปลุกพลัง Select2 (เปลี่ยน select ธรรมดาให้กลายเป็นช่องค้นหา)
+    $(`#${selectId}`).select2({
+        placeholder: "-- ค้นหา/เลือกวัตถุดิบ --",
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "ไม่พบวัตถุดิบที่ค้นหา";
+            }
+        }
+    });
 }
 
 // เพิ่มแถวเริ่มต้น 1 แถวตอนโหลดหน้าเว็บ
