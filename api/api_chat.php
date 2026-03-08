@@ -129,6 +129,7 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 ข้อมูลผู้ใช้:
 - ชื่อ: {$userName}
 - เป้าหมายแคลอรี่: {$profile['target']} kcal/วัน
+- เป้าหมายสุขภาพ (Goal): {$profile['goal_title']} ({$profile['goal_desc']})
 - โรคประจำตัว: {$profile['conditions']}
 - อาหารที่แพ้: {$allergy_str}
 - เมนูที่เพิ่งทานไปเมื่อเร็วๆ นี้ (ห้ามแนะนำซ้ำเด็ดขาด): {$past_menu_str}
