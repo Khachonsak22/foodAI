@@ -154,28 +154,25 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 ";
 
 
-/// ── ดึง API Key และ Model จากตาราง system_settings (แก้ไขเป็นรูปแบบ mysqli ให้ถูกต้อง) ──
+/// ── ดึง API Key และ Model จากตาราง system_settings ──
 $setting_stmt = $conn->query("SELECT api_key, api_model FROM system_settings WHERE id = 1");
 
 if ($setting_stmt && $setting_stmt->num_rows > 0) {
     $setting = $setting_stmt->fetch_assoc();
-    $apiKey = $setting['api_key'];
-    $apiModel = $setting['api_model']; 
+    // เพิ่ม trim() เพื่อตัดช่องว่างและ Enter ที่อาจติดมาจากฐานข้อมูล
+    $apiKey = trim($setting['api_key']);
+    $apiModel = trim($setting['api_model']); 
 } else {
-    // กรณีหาข้อมูลในฐานข้อมูลไม่เจอ (กันเว็บพัง)
-    $apiKey = GEMINI_API_KEY;
+    // เช็คว่ามีการประกาศ GEMINI_API_KEY ไว้หรือไม่ ป้องกันเว็บพัง
+    $apiKey = defined('GEMINI_API_KEY') ? trim(GEMINI_API_KEY) : '';
     $apiModel = 'gemini-2.5-flash';
 }
 
-// เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
-$url = "[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){$apiModel}:generateContent?key=" . $apiKey;
+// เอาตัวแปร $apiModel เข้าไปเสียบใน URL
+$url = "https://generativelanguage.googleapis.com/v1beta/models/{$apiModel}:generateContent?key=" . $apiKey;
 
-// 4. จัดรูปแบบข้อมูล (ล็อกคอเป็น JSON เพื่อความเสถียร)
 $data = [
-    "contents" => [[ "parts" => [[ "text" => $systemPrompt . "\nUser: " . $userMessage ]] ]],
-    "generationConfig" => [
-        "responseMimeType" => "application/json"
-    ]
+    "contents" => [[ "parts" => [[ "text" => $systemPrompt . "\nUser: " . $userMessage ]] ]]
 ];
 
 $ch = curl_init($url);
@@ -184,45 +181,60 @@ curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch, CURLOPT_TIMEOUT, 30); // เพิ่ม Timeout ป้องกันรอนานเกินไป
 
 $response = curl_exec($ch);
-// รับ HTTP Code เพื่อเช็คสถานะการเชื่อมต่อ
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curl_err = curl_error($ch); // 💥 เพิ่มบรรทัดนี้เพื่อดักจับ Error ที่แท้จริงของระบบ
 curl_close($ch);
 
 $responseData = json_decode($response, true);
 
-// เพิ่มการเช็ค Http Code เพื่อป้องกัน API เอ๋อแล้วเงียบหาย
 if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     $rawText = $responseData['candidates'][0]['content']['parts'][0]['text'];
     
-    // Clean JSON string
-    $cleanJson = str_replace(['```json', '```'], '', $rawText);
+    // ดึงเฉพาะข้อมูล JSON เท่านั้น
+    $cleanJson = '';
+    if (preg_match('/\{.*\}/s', $rawText, $matches)) {
+        $cleanJson = $matches[0];
+    } else {
+        $cleanJson = $rawText;
+    }
+    
     $parsedData = json_decode($cleanJson, true);
-
     if (!$parsedData) {
-        $parsedData = [
-            "chat_response" => $rawText,
-            "recommended_menus" => []
-        ];
+        $parsedData = ["chat_response" => "ขออภัยค่ะ ฉันไม่สามารถจัดรูปแบบข้อมูลได้ กรุณาลองใหม่อีกครั้ง", "recommended_menus" => []];
     }
 
     if ($userId > 0) {
         $menusToSave = $parsedData['recommended_menus'] ?? [];
         
-        // 1. บันทึกเมนูลงตาราง ai_saved_menus อัตโนมัติ (ตามโครงสร้างโค้ดเดิมที่คุณส่งมา)
         if (!empty($menusToSave)) {
-            $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
+            $htmlButtons = "<div style='margin-top:15px; display:flex; flex-direction:column; gap:8px;'>";
+            $htmlButtons .= "<p style='font-size:0.85rem; color:#4b5563; margin-bottom:5px;'>📌 <b>คลิกปุ่มด้านล่างเพื่อบันทึกเมนูที่คุณต้องการ:</b></p>";
+            
             foreach ($menusToSave as $m) {
-                $mName = $m['name'] ?? 'เมนูอาหาร';
+                $mName = htmlspecialchars($m['name'] ?? '');
                 $mCal = (int)($m['calories'] ?? 0);
-                $mDesc = $m['desc'] ?? '';
-                $ins_menu_stmt->bind_param("isis", $userId, $mName, $mCal, $mDesc);
-                $ins_menu_stmt->execute();
+                $mDesc = htmlspecialchars($m['desc'] ?? '');
+                
+                $mNameJs = addslashes($m['name'] ?? '');
+                $mDescJs = addslashes($m['desc'] ?? '');
+                
+                $onClick = "event.preventDefault(); var btn=this; btn.innerText='กำลังบันทึก...'; fetch('api_chat.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'save_ai_menu', menu_name:'{$mNameJs}', calories:{$mCal}, description:'{$mDescJs}'})}).then(r=>r.json()).then(d=>{if(d.status==='success'){btn.innerText='✅ บันทึกแล้ว'; btn.style.background='#9ca3af'; btn.disabled=true;}else{btn.innerText='บันทึก'; alert('เกิดข้อผิดพลาด');}}).catch(()=>alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'));";
+                
+                $onClickAttr = htmlspecialchars($onClick, ENT_QUOTES, 'UTF-8');
+                
+                $htmlButtons .= "<div style='background:#fff; border:1px solid #d1d5db; padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;'>";
+                $htmlButtons .= "<div style='flex:1;'><div style='font-weight:600; color:#16a34a; font-size:0.9rem;'>{$mName}</div><div style='font-size:0.75rem; color:#6b7280;'>🔥 {$mCal} kcal - {$mDesc}</div></div>";
+                $htmlButtons .= "<button onclick=\"{$onClickAttr}\" style='background:#22c55e; color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:0.8rem; font-family:Kanit,sans-serif; cursor:pointer; transition:0.2s; white-space:nowrap;'>บันทึก</button>";
+                $htmlButtons .= "</div>";
             }
+            $htmlButtons .= "</div>";
+            
+            $parsedData['chat_response'] .= $htmlButtons;
         }
-        
-        // 2. บันทึกประวัติแชทลง chat_logs โดยใช้ |||MENUS||| เป็นตัวแบ่ง เพื่อให้หน้าเว็บดึงไปสร้างปุ่มได้
+
         $finalMessageToSave = $parsedData['chat_response'];
         if (!empty($menusToSave)) {
             $finalMessageToSave .= '|||MENUS|||' . json_encode($menusToSave, JSON_UNESCAPED_UNICODE);
@@ -235,10 +247,12 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
 
     echo json_encode($parsedData);
 } else {
-    // ส่ง Error ให้ฝั่งหน้าเว็บทราบชัดเจน
-    $error_msg = isset($responseData['error']['message']) ? $responseData['error']['message'] : 'ระบบ AI ขัดข้องชั่วคราว (HTTP '.$httpcode.')';
+    // 💥 ระบบจะฟ้องข้อความ Error เชิงลึกให้เราเห็นชัดๆ ทันที
+    $error_details = $curl_err ? $curl_err : (isset($responseData['error']['message']) ? $responseData['error']['message'] : 'ไม่ทราบสาเหตุ');
+    $error_msg = "เซิร์ฟเวอร์ขัดข้อง (HTTP {$httpcode}) | รายละเอียด: {$error_details}";
+    
     echo json_encode([
-        'chat_response' => 'ขออภัยค่ะ มีข้อผิดพลาดจากเซิร์ฟเวอร์ AI: ' . $error_msg, 
+        'chat_response' => 'ขออภัยค่ะ มีข้อผิดพลาดในการเชื่อมต่อ: ' . $error_msg, 
         'recommended_menus' => []
     ]);
 }
