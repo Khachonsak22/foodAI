@@ -41,16 +41,6 @@ $active_users = $conn->query("SELECT COUNT(DISTINCT user_id) as count FROM meal_
 // Total AI chats
 $total_chats = $conn->query("SELECT COUNT(*) as count FROM chat_logs WHERE sender = 'user'")->fetch_assoc()['count'];
 
-// Popular health conditions
-$health_conditions = $conn->query("
-    SELECT health_conditions, COUNT(*) as count 
-    FROM health_profiles 
-    WHERE health_conditions IS NOT NULL AND health_conditions != '' 
-    GROUP BY health_conditions 
-    ORDER BY count DESC 
-    LIMIT 5
-")->fetch_all(MYSQLI_ASSOC);
-
 // Recent users (last 10)
 $recent_users = $conn->query("
     SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.created_at,
@@ -61,15 +51,46 @@ $recent_users = $conn->query("
     LIMIT 10
 ")->fetch_all(MYSQLI_ASSOC);
 
-// Popular recipes
+// ─── ปรับปรุงใหม่: เมนูยอดนิยม (แก้ปัญหา MySQL Strict Mode และดึงยอดจริง) ───
 $popular_recipes = $conn->query("
-    SELECT r.id, r.title, r.calories, COUNT(ml.id) as log_count
-    FROM recipes r
-    LEFT JOIN meal_logs ml ON r.id = ml.recipe_id
-    GROUP BY r.id
-    ORDER BY log_count DESC
+    SELECT id, title, calories, 
+           (SELECT COUNT(*) FROM meal_logs WHERE recipe_id = recipes.id) as log_count
+    FROM recipes
+    ORDER BY log_count DESC, id DESC
     LIMIT 5
 ")->fetch_all(MYSQLI_ASSOC);
+
+// ─── ปรับปรุงใหม่: โรคประจำตัวที่พบบ่อย (ดึงมาหั่นคำเพื่อแยกนับยอดจริง) ───
+$health_query = $conn->query("
+    SELECT health_conditions 
+    FROM health_profiles 
+    WHERE health_conditions IS NOT NULL AND health_conditions != ''
+");
+$condition_counts = [];
+if ($health_query) {
+    while ($row = $health_query->fetch_assoc()) {
+        // หั่นข้อความด้วยลูกน้ำ เผื่อผู้ใช้เลือกมาหลายโรค
+        $conditions = explode(',', $row['health_conditions']);
+        foreach ($conditions as $cond) {
+            $cond = trim($cond);
+            if ($cond === '' || mb_strpos($cond, 'ไม่มี') !== false) continue; // ข้ามค่าว่างหรือคนที่เลือก 'ไม่มี'
+            
+            if (!isset($condition_counts[$cond])) {
+                $condition_counts[$cond] = 0;
+            }
+            $condition_counts[$cond]++;
+        }
+    }
+}
+arsort($condition_counts); // เรียงลำดับจากคนเป็นโรคนี้เยอะที่สุดไปน้อยที่สุด
+
+$health_conditions = [];
+$limit = 0;
+foreach ($condition_counts as $cond => $count) {
+    if ($limit >= 10) break; // โชว์ 10 อันดับแรก
+    $health_conditions[] = ['health_conditions' => $cond, 'count' => $count];
+    $limit++;
+}
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -163,7 +184,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 <?php include '../includes/sidebar_admin.php' ?>
 
-<!-- MAIN -->
 <div class="page-wrap">
   
   <header class="topbar">
@@ -178,7 +198,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   
   <main style="padding:2rem 2.5rem 3.5rem;">
     
-    <!-- STATS GRID -->
     <div class="rv rv1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:2rem;">
       
       <div class="stat-card">
@@ -213,10 +232,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       
     </div>
     
-    <!-- ROW 1 -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:2rem;">
       
-      <!-- Recent Users -->
       <div class="rv rv2 card">
         <h2 style="font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--txt);margin-bottom:16px;">
           <i class="fas fa-user-plus" style="color:var(--g500);margin-right:8px;"></i> ผู้ใช้ล่าสุด
@@ -246,46 +263,52 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
         </div>
       </div>
       
-      <!-- Popular Recipes -->
       <div class="rv rv2 card">
         <h2 style="font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--txt);margin-bottom:16px;">
           <i class="fas fa-fire" style="color:#f97316;margin-right:8px;"></i> เมนูยอดนิยม
         </h2>
         
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <?php foreach ($popular_recipes as $idx => $r): ?>
-          <div style="background:var(--g50);border:1px solid var(--g200);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
-            <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:var(--g600);min-width:32px;">
-              #<?= $idx + 1 ?>
-            </div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:.85rem;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                <?= htmlspecialchars($r['title']) ?>
+          <?php if(empty($popular_recipes)): ?>
+            <div style="padding:15px; text-align:center; color:var(--muted); font-size:0.85rem;">ยังไม่มีข้อมูลการบันทึกอาหาร</div>
+          <?php else: ?>
+            <?php foreach ($popular_recipes as $idx => $r): ?>
+            <div style="background:var(--g50);border:1px solid var(--g200);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+              <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:var(--g600);min-width:32px;">
+                #<?= $idx + 1 ?>
               </div>
-              <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">
-                <?= $r['calories'] ?> kcal • <?= $r['log_count'] ?> ครั้ง
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:.85rem;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  <?= htmlspecialchars($r['title']) ?>
+                </div>
+                <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">
+                  <?= $r['calories'] ?> kcal • <?= $r['log_count'] ?> ครั้ง
+                </div>
               </div>
             </div>
-          </div>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
+          <?php endif; ?>
         </div>
       </div>
       
     </div>
     
-    <!-- Health Conditions -->
     <div class="rv rv3 card">
       <h2 style="font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--txt);margin-bottom:16px;">
         <i class="fas fa-heartbeat" style="color:#dc2626;margin-right:8px;"></i> โรคประจำตัวที่พบบ่อย
       </h2>
       
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <?php foreach ($health_conditions as $hc): ?>
-        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:11px;padding:10px 16px;">
-          <div style="font-size:.85rem;font-weight:600;color:#ea580c;"><?= htmlspecialchars($hc['health_conditions']) ?></div>
-          <div style="font-size:.7rem;color:#9a3412;margin-top:3px;"><?= $hc['count'] ?> คน</div>
-        </div>
-        <?php endforeach; ?>
+        <?php if(empty($health_conditions)): ?>
+            <div style="color:var(--muted); font-size:0.85rem;">ยังไม่มีข้อมูลโรคประจำตัว</div>
+        <?php else: ?>
+            <?php foreach ($health_conditions as $hc): ?>
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:11px;padding:10px 16px;">
+              <div style="font-size:.85rem;font-weight:600;color:#ea580c;"><?= htmlspecialchars($hc['health_conditions']) ?></div>
+              <div style="font-size:.7rem;color:#9a3412;margin-top:3px;"><?= $hc['count'] ?> คน</div>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
       </div>
     </div>
     

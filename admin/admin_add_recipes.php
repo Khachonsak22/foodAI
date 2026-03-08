@@ -274,14 +274,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
                     เหมาะสำหรับโรคประจำตัว
                 </div>
                 <div class="tag-checkbox-group">
-                    <?php foreach($tags_list as $t):
-                        $name_check = mb_strtolower($t['name'], 'UTF-8');
-                        // เช็คคีย์เวิร์ดที่เกี่ยวกับการแพ้อาหาร
-                        $is_allergy = (mb_strpos($name_check, 'แพ้') !== false || mb_strpos($name_check, 'ไม่มี') !== false || mb_strpos($name_check, 'ปราศจาก') !== false || mb_strpos($name_check, 'free') !== false);
-                        
-                        // ถ้าเป็นแท็กเกี่ยวกับการแพ้ ให้ข้ามไปกล่องที่ 2
-                        if ($is_allergy) continue; 
-                    ?>
+                    <?php foreach($tags_list as $t):?>
                       <label class="tag-label disease">
                         <input type="checkbox" name="tags[]" value="<?= $t['id'] ?>" style="accent-color: #059669;">
                         <?= htmlspecialchars($t['name']) ?>
@@ -343,8 +336,8 @@ function addIngredientRow() {
         <div style="flex:2; min-width:180px;">
             ${selectHTML}
         </div>
-        <input type="number" step="0.01" name="amount[]" placeholder="ปริมาณ" class="form-input" style="flex:1; padding:12px 14px; min-width:80px;">
-        <input type="text" name="unit[]" placeholder="หน่วย (เช่น กรัม)" class="form-input" style="flex:1; padding:12px 14px; min-width:80px;">
+        <input type="number" step="0.01" name="amount[]" placeholder="ปริมาณ" required class="form-input" style="flex:1; padding:12px 14px; min-width:80px;">
+        <input type="text" name="unit[]" placeholder="หน่วย (เช่น กรัม)" required class="form-input" style="flex:1; padding:12px 14px; min-width:80px;">
         <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; width:48px; height:48px; border-radius:12px; cursor:pointer; flex-shrink:0; transition:all .2s; display:flex; align-items:center; justify-content:center;">
             <i class="fas fa-trash"></i>
         </button>

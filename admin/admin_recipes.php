@@ -155,7 +155,11 @@ $total = count($recipes);
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -220,6 +224,57 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   .topbar { padding: 0 1.25rem; }
   main { padding: 1.5rem 1rem !important; }
 }
+
+/* ==========================================
+   ตกแต่งไลบรารี Select2 ให้เข้ากับธีมเว็บ 
+   ========================================== */
+.select2-container--default .select2-selection--single {
+  height: 42px; /* ให้สูงเท่ากับ input ปกติในหน้านี้ */
+  padding: 6px 14px;
+  border: 1.5px solid var(--bdr);
+  border-radius: 10px;
+  font-family: 'Kanit', sans-serif;
+  font-size: .82rem;
+  background: #fff;
+  outline: none;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+.select2-container--default.select2-container--open .select2-selection--single {
+  border-color: var(--g400);
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  padding-left: 0;
+  color: var(--txt);
+  line-height: normal;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 100%;
+  right: 12px;
+}
+.select2-dropdown {
+  border: 1.5px solid var(--g400);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(34,197,94,0.15);
+  font-family: 'Kanit', sans-serif;
+  font-size: .82rem;
+  overflow: hidden;
+  z-index: 99999; /* ให้ลอยอยู่เหนือ Modal */
+}
+.select2-search--dropdown { padding: 8px; }
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  border: 1.5px solid var(--bdr);
+  border-radius: 8px;
+  padding: 6px 10px;
+  outline: none;
+  font-family: 'Kanit', sans-serif;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: var(--g500);
+  color: white;
+}
+.select2-results__option { padding: 6px 12px; }
 </style>
 </head>
 <body>
@@ -368,9 +423,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 <script>
 // ข้อมูลวัตถุดิบทั้งหมดจากฐานข้อมูลสำหรับ Dropdown
 const ingredientsData = <?php echo json_encode($ingredients_list, JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+let rowIdCounter = 0; // สร้างตัวแปรนับสำหรับกำหนด ID ให้ Select2
 
 // ฟังก์ชันสร้าง Row กรอกวัตถุดิบ
 function addEditIngredientRow(selectedId = '', amount = '', unit = '') {
+    rowIdCounter++;
     const container = document.getElementById('edit_ingredients_container');
     const row = document.createElement('div');
     row.style.display = 'flex';
@@ -378,8 +435,11 @@ function addEditIngredientRow(selectedId = '', amount = '', unit = '') {
     row.style.marginBottom = '12px';
     row.style.alignItems = 'center';
 
-    let selectHTML = '<select name="ingredient_id[]" class="form-input" style="flex:2; padding:10px 14px;" required>';
-    selectHTML += '<option value="">-- เลือกวัตถุดิบ --</option>';
+    const selectId = 'edit_ing_select_' + rowIdCounter;
+
+    // สร้าง Select แบบให้ Select2 ควบคุม
+    let selectHTML = `<select name="ingredient_id[]" id="${selectId}" required>`;
+    selectHTML += '<option value="">-- ค้นหา/เลือกวัตถุดิบ --</option>';
     ingredientsData.forEach(ing => {
         const selected = (ing.id == selectedId) ? 'selected' : '';
         selectHTML += `<option value="${ing.id}" ${selected}>${ing.name}</option>`;
@@ -387,14 +447,28 @@ function addEditIngredientRow(selectedId = '', amount = '', unit = '') {
     selectHTML += '</select>';
 
     row.innerHTML = `
-        ${selectHTML}
-        <input type="number" step="0.01" name="amount[]" value="${amount}" placeholder="ปริมาณ" required class="form-input" style="flex:1; padding:10px 14px;">
-        <input type="text" name="unit[]" value="${unit}" placeholder="หน่วย" required class="form-input" style="flex:1; padding:10px 14px;">
-        <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; width:44px; height:44px; border-radius:12px; cursor:pointer; flex-shrink:0; transition:all .2s;">
+        <div style="flex:2; min-width:180px;">
+            ${selectHTML}
+        </div>
+        <input type="number" step="0.01" name="amount[]" value="${amount}" placeholder="ปริมาณ" required class="form-input" style="flex:1; padding:10px 14px; min-width:80px;">
+        <input type="text" name="unit[]" value="${unit}" placeholder="หน่วย" required class="form-input" style="flex:1; padding:10px 14px; min-width:80px;">
+        <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; width:44px; height:44px; border-radius:12px; cursor:pointer; flex-shrink:0; transition:all .2s; display:flex; align-items:center; justify-content:center;">
             <i class="fas fa-trash"></i>
         </button>
     `;
     container.appendChild(row);
+
+    // เปิดใช้งาน Select2 และตั้งให้ dropdownParent เป็น editModal เพื่อไม่ให้ dropdown ทะลุไปอยู่หลัง Popup
+    $(`#${selectId}`).select2({
+        placeholder: "-- ค้นหา/เลือกวัตถุดิบ --",
+        width: '100%',
+        dropdownParent: $('#editModal'),
+        language: {
+            noResults: function() {
+                return "ไม่พบวัตถุดิบที่ค้นหา";
+            }
+        }
+    });
 }
 
 // ฟังก์ชันเปิด Edit Modal พร้อมโหลดข้อมูลวัตถุดิบและ Tag

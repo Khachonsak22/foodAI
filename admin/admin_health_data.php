@@ -117,7 +117,16 @@ if ($allerg_result) {
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 
 <style>
 :root{--g50:#f0fdf4;--g200:#bbf7d0;--g500:#22c55e;--g600:#16a34a;--g700:#15803d;--t500:#14b8a6;--bg:#f8f9fa;--bdr:#e8f0e9;--txt:#1a2e1a;--sub:#4b6b4e;--muted:#6c757d;--sb-w:260px;}
@@ -243,23 +252,15 @@ main{padding:2.5rem;max-width:1400px;margin:0 auto;}
     box-shadow: 0 0 0 0.25rem rgba(34, 197, 94, 0.15);
 }
 
-/* DataTables Customization */
-table.dataTable.table-striped > tbody > tr:nth-of-type(odd) > * {
-    box-shadow: inset 0 0 0 9999px rgba(0,0,0,0.01);
-}
-table.dataTable > thead > tr > th {
-    border-bottom: 2px solid #e9ecef;
-    color: #6c757d;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
-}
-table.dataTable > tbody > tr > td {
-    vertical-align: middle;
-    color: #495057;
-    border-bottom: 1px solid #f1f3f5;
-}
+/* DataTables CSS เหมือน admin_recipes */
+.dataTables_wrapper{font-family:'Kanit',sans-serif!important;}
+.dataTables_wrapper .dataTables_filter input{border:1.5px solid #dee2e6;border-radius:8px;padding:6px 12px;font-size:.8rem;}
+.dataTables_wrapper .dataTables_info{font-size:.75rem;color:var(--muted);}
+.dataTables_wrapper .dataTables_paginate .paginate_button{border:1px solid #dee2e6;border-radius:8px;padding:4px 12px;font-size:.75rem;}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:var(--g500)!important;color:#fff!important;border:none!important;}
+.dt-buttons{margin-bottom:12px;}
+.dt-button{background:var(--g500)!important;color:#fff!important;border:none!important;padding:8px 16px!important;border-radius:8px!important;}
+table.dataTable > thead > tr > th { text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
 
 @media (max-width:1024px){
   .page-wrap{margin-left:0;}
@@ -316,7 +317,7 @@ table.dataTable > tbody > tr > td {
         </button>
       </div>
       <div class="card-body-custom">
-        <div class="table-responsive">
+        <div style="overflow-x:auto;">
             <table id="conditionsTable" class="table table-hover table-borderless w-100">
             <thead>
                 <tr>
@@ -359,7 +360,7 @@ table.dataTable > tbody > tr > td {
         </button>
       </div>
       <div class="card-body-custom">
-        <div class="table-responsive">
+        <div style="overflow-x:auto;">
             <table id="allergensTable" class="table table-hover table-borderless w-100">
             <thead>
                 <tr>
@@ -470,27 +471,39 @@ table.dataTable > tbody > tr > td {
   <input type="hidden" name="id" id="delete_id">
 </form>
 
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
 $(document).ready(function() {
-  // ตั้งค่า DataTables ให้เข้ากับ Bootstrap 5
-  const dtOptions = {
+  const dtConfig = {
+    pageLength: 25,
+    order: [[0, "asc"]],
     language: {
-      url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+      search: "ค้นหา:",
+      lengthMenu: "แสดง _MENU_ รายการ",
+      info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+      infoEmpty: "ไม่มีข้อมูล",
+      paginate: {next: "ถัดไป", previous: "ก่อนหน้า"}
     },
-    pageLength: 10,
-    ordering: false, // ปิดการเรียงลำดับแบบเก่าเพื่อให้ดูสะอาดตา
-    dom: "<'row mb-3'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-         "<'row'<'col-sm-12'tr>>" +
-         "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+    dom: "Bfrtip",
+    buttons: [
+      {
+        extend: "excel",
+        text: '<i class="fas fa-file-excel"></i> Excel',
+        exportOptions: { columns: ":not(:last-child)" }
+      },
+      {
+        extend: "csv",
+        text: '<i class="fas fa-file-csv"></i> CSV',
+        charset: 'utf-8',
+        bom: true, 
+        exportOptions: { columns: ":not(:last-child)" }
+      },
+    ]
   };
 
-  $('#conditionsTable').DataTable(dtOptions);
-  $('#allergensTable').DataTable(dtOptions);
+  $('#conditionsTable').DataTable(dtConfig);
+  $('#allergensTable').DataTable(dtConfig);
 });
 
 function toggleSidebar() {
@@ -513,7 +526,6 @@ function editTag(tag) {
   document.getElementById('edit_id').value = tag.id;
   document.getElementById('edit_name').value = tag.name;
   document.getElementById('edit_description').value = tag.description || '';
-  // ตัดส่วนที่ดึงค่า icon ออกไป
   document.getElementById('editModal').classList.add('show');
 }
 

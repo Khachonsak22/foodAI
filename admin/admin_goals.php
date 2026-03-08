@@ -124,6 +124,16 @@ if ($res_diets) { while($r = $res_diets->fetch_assoc()) $diets[] = $r; }
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
 <style>
 :root{--g50:#f0fdf4;--g100:#dcfce7;--g200:#bbf7d0;--g300:#86efac;--g400:#4ade80;--g500:#22c55e;--g600:#16a34a;--g700:#15803d;--t400:#2dd4bf;--t500:#14b8a6;--t600:#0d9488;--bg:#f8faf9;--card:#fff;--bdr:#e8f0e9;--txt:#1a2e1a;--sub:#4b6b4e;--muted:#8da98f;--sb-w:260px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -153,6 +163,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .form-input:focus { border-color: var(--g500); background: #fff; box-shadow: 0 0 0 3px rgba(34,197,94,.1); }
 .form-label { display:block; font-size:.82rem; font-weight:600; color:var(--sub); margin-bottom:6px; }
 .swal2-container { font-family: 'Kanit', sans-serif !important; }
+
+/* DataTables CSS เหมือน admin_recipes */
+.dataTables_wrapper{font-family:'Kanit',sans-serif!important;}
+.dataTables_wrapper .dataTables_filter input{border:1.5px solid var(--bdr);border-radius:8px;padding:6px 12px;font-size:.8rem;}
+.dataTables_wrapper .dataTables_info{font-size:.75rem;color:var(--muted);}
+.dataTables_wrapper .dataTables_paginate .paginate_button{border:1px solid var(--bdr);border-radius:8px;padding:4px 12px;font-size:.75rem;}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:var(--g500)!important;color:#fff!important;}
+.dt-buttons{margin-bottom:12px;}
+.dt-button{background:var(--g500)!important;color:#fff!important;border:none!important;padding:8px 16px!important;border-radius:8px!important;}
 </style>
 </head>
 <body>
@@ -179,7 +198,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     
     <div class="card">
       <div style="overflow-x:auto;">
-        <table class="table">
+        <table id="goalsTable" class="table" style="width: 100%;">
           <thead>
             <tr>
               <th>ID</th>
@@ -235,7 +254,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
     <div class="card">
       <div style="overflow-x:auto;">
-        <table class="table">
+        <table id="dietsTable" class="table" style="width: 100%;">
           <thead>
             <tr>
               <th>ID</th>
@@ -341,6 +360,39 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 </div>
 
 <script>
+// สคริปต์เปิดใช้งาน DataTables
+$(document).ready(function() {
+  const dtConfig = {
+    pageLength: 25,
+    order: [[0, "asc"]],
+    language: {
+      search: "ค้นหา:",
+      lengthMenu: "แสดง _MENU_ รายการ",
+      info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+      infoEmpty: "ไม่มีข้อมูล",
+      paginate: {next: "ถัดไป", previous: "ก่อนหน้า"}
+    },
+    dom: "Bfrtip",
+    buttons: [
+      {
+        extend: "excel",
+        text: '<i class="fas fa-file-excel"></i> Excel',
+        exportOptions: { columns: ":not(:last-child)" }
+      },
+      {
+        extend: "csv",
+        text: '<i class="fas fa-file-csv"></i> CSV',
+        charset: 'utf-8',
+        bom: true, 
+        exportOptions: { columns: ":not(:last-child)" }
+      },
+    ]
+  };
+
+  $("#goalsTable").DataTable(dtConfig);
+  $("#dietsTable").DataTable(dtConfig);
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     <?php if ($success_msg): ?>
         Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: '<?= htmlspecialchars($success_msg) ?>', confirmButtonColor: '#22c55e' });
