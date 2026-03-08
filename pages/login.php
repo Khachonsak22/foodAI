@@ -55,7 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <style>
 :root{--g50:#f0fdf4;--g100:#dcfce7;--g200:#bbf7d0;--g300:#86efac;--g400:#4ade80;--g500:#22c55e;--g600:#16a34a;--g700:#15803d;--t400:#2dd4bf;--t500:#14b8a6;--bg:#f5f8f5;--txt:#1a2e1a;--sub:#4b6b4e;--muted:#8da98f;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;position:relative;overflow:hidden;}
+
+/* แก้ไขบรรทัดนี้: เปลี่ยน overflow:hidden เป็น overflow-x:hidden; overflow-y:auto; */
+body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;position:relative;overflow-x:hidden; overflow-y:auto;}
+
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#e0f2fe 100%);opacity:.6;}
 body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(circle at 20% 50%,rgba(74,222,128,.15) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(45,212,191,.12) 0%,transparent 50%);animation:bgPulse 8s ease-in-out infinite;}
 @keyframes bgPulse{0%,100%{opacity:1;}50%{opacity:.6;}}
