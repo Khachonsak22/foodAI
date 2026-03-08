@@ -48,9 +48,9 @@ if ($incoming_secret !== N8N_SECRET) {
 }
 
 // 5. ตรวจสอบความครบถ้วนของข้อมูลข่าว
-$title     = trim($data['title']     ?? '');
-$content   = trim($data['content']   ?? '');
-$image_url = trim($data['image_url'] ?? '');
+$title        = trim($data['title'] ?? '');
+$content      = trim($data['content'] ?? '');
+$image_prompt = trim($data['image_prompt'] ?? ''); // รับคำค้นหาภาษาอังกฤษจาก n8n
 
 if (empty($title) || empty($content)) {
     http_response_code(422);
@@ -58,9 +58,17 @@ if (empty($title) || empty($content)) {
     exit;
 }
 
-// 6. ทำความสะอาดข้อมูล (Sanitize)
-$title     = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-$image_url = filter_var($image_url, FILTER_VALIDATE_URL) ? $image_url : '';
+// 6. ทำความสะอาดข้อมูล (Sanitize) และสร้างลิงก์รูปภาพ AI
+$title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+
+// ถ้า n8n ส่งคำภาษาอังกฤษมา ให้ PHP สร้างลิงก์ Pollinations.ai อัตโนมัติเลย
+if (!empty($image_prompt)) {
+    // urlencode() จะช่วยแปลงช่องว่างให้เป็นโค้ดที่ URL อ่านได้
+    $image_url = "https://image.pollinations.ai/prompt/" . urlencode($image_prompt) . "?width=800&height=500&nologo=true";
+} else {
+    // แต่ถ้าไม่มี ก็ให้บันทึกเป็นค่าว่างไป
+    $image_url = '';
+}
 
 // 7. ลบเฉพาะข่าวที่เก่ากว่า 7 วันทิ้ง
 $conn->query("DELETE FROM news WHERE created_at < (NOW() - INTERVAL 7 DAY)");

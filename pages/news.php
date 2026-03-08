@@ -245,7 +245,7 @@ main { padding: 2rem 2.5rem 4rem; width: 100%; max-width: 1200px; margin: 0 auto
           <?php if (!empty($featured['image_url'])): ?>
             <img src="<?= htmlspecialchars($featured['image_url']) ?>" alt="Cover">
           <?php else: ?>
-            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:4rem;opacity:.2;">📰</div>
+            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:4rem;opacity:.2;" img src="<?php echo $row['image_url']; ?>" alt="Cover" class="your-image-class"></div>
           <?php endif; ?>
         </div>
         
