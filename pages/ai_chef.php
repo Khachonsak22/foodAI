@@ -346,5 +346,23 @@ function sendChip(el) {
 
 inputField.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendUserMessage(); } });
 </script>
+<script>
+// เช็คคำทักทายตอนเช้าเมื่อเปิดหน้าเว็บ
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('api_chat.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_greeting' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // ถ้าระบบส่งคำทักทายมา (แปลว่าเพิ่งเข้ามาครั้งแรกของวัน) ให้โหลดหน้าใหม่เพื่อแสดงแชท
+        if (data.chat_response && data.chat_response !== "") {
+            window.location.reload(); 
+        }
+    })
+    .catch(error => console.error('Error fetching greeting:', error));
+});
+</script>
 </body>
 </html>

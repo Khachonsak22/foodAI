@@ -13,9 +13,45 @@ header('Content-Type: application/json');
 
 $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true);
-$userMessage = $input['message'] ?? '';
 $userId = $_SESSION['user_id'] ?? 0;
 
+// ─── เพิ่มใหม่: ดึงชื่อผู้ใช้ ───
+$userName = 'ผู้ใช้งาน';
+if ($userId > 0) {
+    $u_stmt = $conn->prepare("SELECT first_name FROM users WHERE id = ?");
+    $u_stmt->bind_param("i", $userId);
+    $u_stmt->execute();
+    if ($u_row = $u_stmt->get_result()->fetch_assoc()) {
+        $userName = $u_row['first_name'];
+    }
+}
+
+// ─── เพิ่มใหม่: ระบบทักทายตอนเปิดหน้าเว็บครั้งแรกของวัน ───
+if (isset($input['action']) && $input['action'] === 'get_greeting') {
+    // เช็คว่าวันนี้มีการคุยกันหรือยัง จะได้ไม่ทักซ้ำเวลารีเฟรชหน้า
+    $check_stmt = $conn->prepare("SELECT id FROM chat_logs WHERE user_id = ? AND DATE(created_at) = CURDATE() LIMIT 1");
+    $check_stmt->bind_param("i", $userId);
+    $check_stmt->execute();
+    
+    if ($check_stmt->get_result()->num_rows === 0) {
+        // ถ้ายังไม่มีแชทเลยในวันนี้ ให้ AI เริ่มทักก่อน
+        $greet_msg = "สวัสดีครับคุณ {$userName}! 🌅 วันนี้อยากทานอะไร หรือให้เชฟช่วยคิดเมนูสำหรับ 1 วัน ที่เหมาะกับคุณให้ครับ?";
+        
+        // บันทึกลง log ฝั่ง AI 
+        $log_stmt = $conn->prepare("INSERT INTO chat_logs (user_id, sender, message) VALUES (?, 'ai', ?)");
+        $log_stmt->bind_param("is", $userId, $greet_msg);
+        $log_stmt->execute();
+        
+        echo json_encode(['chat_response' => $greet_msg, 'recommended_menus' => []]);
+    } else {
+        // วันนี้ทักไปแล้ว ไม่ต้องส่งข้อความทักทายซ้ำ
+        echo json_encode(['chat_response' => '', 'recommended_menus' => []]);
+    }
+    exit();
+}
+// ────────────────────────────────────────────────
+
+$userMessage = $input['message'] ?? '';
 if (!$userMessage) { echo json_encode(['reply' => '']); exit; }
 
 // บันทึก Log ฝั่ง User
@@ -82,9 +118,10 @@ if ($userId > 0) {
 $past_menu_str = empty($past_menus) ? 'ไม่มี' : implode(", ", $past_menus);
 
 
-// System Prompt
-$systemPrompt = "คุณคือเชฟและนักโภชนาการอัจฉริยะ ตอบกลับเป็นภาษาไทยที่สุภาพ
+// System Prompt (เพิ่มชื่อผู้ใช้และคำสั่งให้เรียกชื่อ)
+$systemPrompt = "คุณคือเชฟและนักโภชนาการอัจฉริยะ ให้คุณเป็นผู้ชายและตอบกลับเป็นภาษาไทยที่สุภาพ
 ข้อมูลผู้ใช้:
+- ชื่อผู้ใช้: {$userName}
 - เป้าหมายแคลอรี่: {$profile['target']} kcal/วัน
 - เป้าหมายสุขภาพ (Goal): {$profile['goal_title']} ({$profile['goal_desc']})
 - โรคประจำตัว: {$profile['conditions']}
@@ -94,22 +131,23 @@ $systemPrompt = "คุณคือเชฟและนักโภชนาก
 รายชื่อเมนูที่มีในฐานข้อมูลระบบ: {$recipes_str}
 
 คำสั่งสำคัญ:
-1. หากผู้ใช้ต้องการให้จัดเมนู ให้คุณจัดเมนูอาหารไทยที่มีอยู่จริง รวมทั้งหมด 4 มื้อ (มื้อเช้า, มื้อกลางวัน, มื้อเย็น, และมื้อว่าง 1 มื้อ)
-2. เมนูทั้ง 4 มื้อในครั้งนี้ จะต้องไม่ซ้ำกันเองเลย และต้องไม่ซ้ำกับ 'เมนูที่เพิ่งทานไปเมื่อเร็วๆ นี้' โดยเด็ดขาด เพื่อความหลากหลาย
-3. คุณต้องตรวจสอบ 'โรคประจำตัว' และ 'อาหารที่แพ้' ของผู้ใช้อย่างเคร่งครัด เมนูที่แนะนำต้องปลอดภัย 100%
-4. พยายามเลือกเมนูจาก 'รายชื่อเมนูที่มีในฐานข้อมูลระบบ' ก่อน หากเมนูนั้นปลอดภัยและไม่ซ้ำ
-5. หากในฐานข้อมูลไม่มีเมนูที่เหมาะสม หรือเมนูที่มีมันซ้ำกับที่เคยกินไปแล้ว ให้คิดเมนูอาหารไทยขึ้นมาใหม่ให้ครบ 4 มื้อ
-6. ให้ตอบกลับในรูปแบบ **JSON เท่านั้น** โดยไม่มี Markdown (```json) ครอบ
-7. ในช่อง \"name\" ของ recommended_menus ให้ใส่ **แค่ชื่อเมนูอาหารเพียวๆ เท่านั้น** ห้ามมีคำว่า \"มื้อเช้า\", \"มื้อกลางวัน\", \"มื้อเย็น\", \"มื้อว่าง\" หรือตัวเลขลำดับ นำหน้าหรือตามหลังเด็ดขาด (เช่น ให้ตอบ \"ข้าวกะเพราไก่\" ห้ามตอบ \"มื้อเช้า: ข้าวกะเพราไก่\")
+1. ให้คุณเรียกชื่อผู้ใช้ว่า 'คุณ{$userName}' ในการสนทนาให้ดูเป็นธรรมชาติและเป็นกันเอง
+2. หากผู้ใช้ต้องการให้จัดเมนู ให้คุณจัดเมนูอาหารไทยที่มีอยู่จริง รวมทั้งหมด 4 มื้อ (มื้อเช้า, มื้อกลางวัน, มื้อเย็น, และมื้อว่าง 1 มื้อ)
+3. เมนูทั้ง 4 มื้อในครั้งนี้ จะต้องไม่ซ้ำกันเองเลย และต้องไม่ซ้ำกับ 'เมนูที่เพิ่งทานไปเมื่อเร็วๆ นี้' โดยเด็ดขาด เพื่อความหลากหลาย
+4. คุณต้องตรวจสอบ 'โรคประจำตัว' และ 'อาหารที่แพ้' ของผู้ใช้อย่างเคร่งครัด เมนูที่แนะนำต้องปลอดภัย 100%
+5. พยายามเลือกเมนูจาก 'รายชื่อเมนูที่มีในฐานข้อมูลระบบ' ก่อน หากเมนูนั้นปลอดภัยและไม่ซ้ำ
+6. หากในฐานข้อมูลไม่มีเมนูที่เหมาะสม หรือเมนูที่มีมันซ้ำกับที่เคยกินไปแล้ว ให้คิดเมนูอาหารไทยขึ้นมาใหม่ให้ครบ 4 มื้อ
+7. ให้ตอบกลับในรูปแบบ **JSON เท่านั้น** โดยไม่มี Markdown (```json) ครอบ
+8. ในช่อง \"name\" ของ recommended_menus ให้ใส่แค่ชื่อเมนูอาหารเพียวๆ ห้ามมีคำว่า มื้อเช้า มื้อเย็น นำหน้าเด็ดขาด
 
 รูปแบบ JSON ที่ต้องการ:
 {
   \"chat_response\": \"ข้อความอธิบายว่าทำไมถึงเลือกเมนูเหล่านี้ ปลอดภัยต่อโรคประจำตัวหรืออาหารที่แพ้อย่างไร (สามารถใช้ Markdown ตกแต่งข้อความได้)\",
   \"recommended_menus\": [
-    { \"name\": \"ชื่อเมนู 1 \", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนู 2 \", \"Menu_Desc\": 500, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนู 3 \", \"calories\": 150, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
-    { \"name\": \"ชื่อเมนู 4 \", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" }
+    { \"name\": \"ชื่อเมนูเพียวๆ 1 \", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนูเพียวๆ 2 \", \"calories\": 500, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนูเพียวๆ 3 \", \"calories\": 150, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" },
+    { \"name\": \"ชื่อเมนูเพียวๆ 4 \", \"calories\": 400, \"desc\": \"คำอธิบายส่วนผสมสั้นๆ\" }
   ]
 }
 หมายเหตุ: ถ้าผู้ใช้แค่ชวนคุยทั่วไป ไม่ได้ขอเมนู ให้ปล่อย recommended_menus เป็นอาเรย์ว่าง []
@@ -130,7 +168,7 @@ if ($setting_stmt && $setting_stmt->num_rows > 0) {
 }
 
 // เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
-$url = "https://generativelanguage.googleapis.com/v1beta/models/{$apiModel}:generateContent?key=" . $apiKey;
+$url = "[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){$apiModel}:generateContent?key=" . $apiKey;
 
 // 4. จัดรูปแบบข้อมูล (ล็อกคอเป็น JSON เพื่อความเสถียร)
 $data = [
@@ -172,7 +210,7 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
     if ($userId > 0) {
         $menusToSave = $parsedData['recommended_menus'] ?? [];
         
-        // 1. บันทึกเมนูลงตาราง ai_saved_menus อัตโนมัติ (เพื่อให้ไปโผล่ในหน้า meal_log ทันที)
+        // 1. บันทึกเมนูลงตาราง ai_saved_menus อัตโนมัติ (ตามโครงสร้างโค้ดเดิมที่คุณส่งมา)
         if (!empty($menusToSave)) {
             $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
             foreach ($menusToSave as $m) {
