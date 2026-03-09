@@ -206,7 +206,7 @@ main {
       <!-- ── BODY STATS ── -->
       <div class="form-card rv rv1">
         <div class="section-label">
-          <span class="section-icon" style="background:#f0fdf4;border:1px solid var(--g200);"><i class="fas fa-notes-medical"></i></span>
+          <span class="section-icon" style="background:#f0fdf4;border:1px solid var(--g200);"><i class="fas fa-weight" style="color: #0e9235;"></i></span>
           ข้อมูลร่างกาย
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -237,11 +237,11 @@ main {
           <label class="field-label">ระดับกิจกรรมในแต่ละวัน</label>
           <div style="position:relative;">
             <select name="activity_level" class="field-select" style="padding-right:36px;">
-              <option value="sedentary"   <?= $activity=='sedentary'  ?'selected':'' ?>>🪑 ไม่ออกกำลังกาย / นั่งทำงานออฟฟิศ</option>
-              <option value="light"       <?= $activity=='light'      ?'selected':'' ?>>🚶 ออกกำลังกายเบาๆ (1–3 วัน/สัปดาห์)</option>
-              <option value="moderate"    <?= $activity=='moderate'   ?'selected':'' ?>>🏃 ออกกำลังกายปานกลาง (3–5 วัน/สัปดาห์)</option>
-              <option value="active"      <?= $activity=='active'     ?'selected':'' ?>>💪 ออกกำลังกายหนัก (6–7 วัน/สัปดาห์)</option>
-              <option value="very_active" <?= $activity=='very_active'?'selected':'' ?>>🏋️ นักกีฬา / ใช้แรงงานหนัก</option>
+              <option value="sedentary"   <?= $activity=='sedentary'  ?'selected':'' ?>>ไม่ออกกำลังกาย / นั่งทำงานออฟฟิศ</option>
+              <option value="light"       <?= $activity=='light'      ?'selected':'' ?>>ออกกำลังกายเบาๆ (1–3 วัน/สัปดาห์)</option>
+              <option value="moderate"    <?= $activity=='moderate'   ?'selected':'' ?>>ออกกำลังกายปานกลาง (3–5 วัน/สัปดาห์)</option>
+              <option value="active"      <?= $activity=='active'     ?'selected':'' ?>>ออกกำลังกายหนัก (6–7 วัน/สัปดาห์)</option>
+              <option value="very_active" <?= $activity=='very_active'?'selected':'' ?>>นักกีฬา / ใช้แรงงานหนัก</option>
             </select>
             <i class="fas fa-chevron-down" style="position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:.65rem;color:var(--muted);pointer-events:none;"></i>
           </div>
@@ -251,7 +251,7 @@ main {
       <!-- ── GOAL ── -->
       <div class="form-card rv rv2">
         <div class="section-label">
-          <span class="section-icon" style="background:#fff1f2;border:1px solid #fecdd3;">🎯</span>
+          <span class="section-icon" style="background:#fff1f2;border:1px solid #fecdd3;"><i class="fa fa-bullseye" style="color: #ff5722;"></i></span>
           เป้าหมายของคุณ
         </div>
         <div style="display:flex;flex-direction:column;gap:9px;">
@@ -288,7 +288,7 @@ main {
       <!-- ── DIET ── -->
       <div class="form-card rv rv3">
         <div class="section-label">
-          <span class="section-icon" style="background:#eff6ff;border:1px solid #bfdbfe;">🥦</span>
+          <span class="section-icon" style="background:#eff6ff;border:1px solid #bfdbfe;"><i class="fas fa-utensils" style="color: #ffffff;"></i></span>
           รูปแบบการกิน <span style="font-size:.7rem;font-weight:500;color:var(--muted);">(เลือกได้มากกว่า 1)</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
@@ -334,7 +334,7 @@ main {
       <!-- ── DISEASES ── -->
       <div class="form-card rv rv4">
         <div class="section-label">
-          <span class="section-icon" style="background:#fefce8;border:1px solid #fde68a;">🩺</span>
+          <span class="section-icon" style="background:#fefce8;border:1px solid #fde68a;"><i class="fas fa-heartbeat" style="color: #fc2759;"></i></span>
           โรคประจำตัว / ข้อจำกัดอาหาร
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
