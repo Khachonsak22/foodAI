@@ -288,7 +288,7 @@ main {
       <!-- ── DIET ── -->
       <div class="form-card rv rv3">
         <div class="section-label">
-          <span class="section-icon" style="background:#eff6ff;border:1px solid #bfdbfe;"><i class="fas fa-utensils" style="color: #ffffff;"></i></span>
+          <span class="section-icon" style="background:#eff6ff;border:1px solid #bfdbfe;"><i class="fas fa-utensils" style="color: #22c55e;"></i></span>
           รูปแบบการกิน <span style="font-size:.7rem;font-weight:500;color:var(--muted);">(เลือกได้มากกว่า 1)</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
