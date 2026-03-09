@@ -285,7 +285,7 @@ function confirmLogout(event, url) {
   event.preventDefault(); // หยุดการเปลี่ยนหน้าทันที
   
   Swal.fire({
-    title: 'ออกจากระบบ?',
+    title: 'ออกจากระบบ',
     text: "คุณต้องการออกจากระบบใช่หรือไม่?",
     icon: 'warning',
     showCancelButton: true,
