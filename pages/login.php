@@ -56,7 +56,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 :root{--g50:#f0fdf4;--g100:#dcfce7;--g200:#bbf7d0;--g300:#86efac;--g400:#4ade80;--g500:#22c55e;--g600:#16a34a;--g700:#15803d;--t400:#2dd4bf;--t500:#14b8a6;--bg:#f5f8f5;--txt:#1a2e1a;--sub:#4b6b4e;--muted:#8da98f;}
 *{box-sizing:border-box;margin:0;padding:0;}
 
-/* แก้ไขบรรทัดนี้: เปลี่ยน overflow:hidden เป็น overflow-x:hidden; overflow-y:auto; */
 body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;position:relative;overflow-x:hidden; overflow-y:auto;}
 
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#e0f2fe 100%);opacity:.6;}
@@ -110,6 +109,24 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .alert.error{background:#fee2e2;border-color:#fecaca;color:#dc2626;}
 .alert i{font-size:1.2rem;flex-shrink:0;}
 
+/* ✅ Password Info Box */
+.password-info{
+  margin-top:10px;
+  padding:10px 14px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  border-radius:10px;
+  font-size:.72rem;
+  color:#1e40af;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.password-info i{
+  font-size:.9rem;
+  color:#3b82f6;
+}
+
 .divider{display:flex;align-items:center;margin:2rem 0;color:var(--muted);font-size:.78rem;font-weight:500;}
 .divider::before,.divider::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,transparent,#e8f0e9,transparent);}
 .divider::before{margin-right:1.2rem;}
@@ -124,26 +141,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .footer p{font-size:.75rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;}
 .footer i{color:var(--g500);}
 
-/* SCROLLBAR */
-::-webkit-scrollbar {
-    width: 6px; /* ความกว้างของ scrollbar แนวตั้ง */
-    height: 6px; /* ความสูงของ scrollbar แนวนอน (ถ้ามี) */
-}
-::-webkit-scrollbar-track {
-    background: transparent; /* สีพื้นหลังแทร็ก */
-}
-::-webkit-scrollbar-thumb {
-    background: #cbd5e1; /* สีของแถบเลื่อนปกติ */
-    border-radius: 10px; /* ความโค้งมนของแถบเลื่อน */
-}
-::-webkit-scrollbar-thumb:hover {
-    background: var(--g500, #22c55e); /* เปลี่ยนเป็นสีเขียวของเว็บเวลาเอาเมาส์ชี้ */
-}
-/* รองรับเว็บบราวเซอร์ Firefox */
-html {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
-}
+::-webkit-scrollbar {width: 6px; height: 6px;}
+::-webkit-scrollbar-track {background: transparent;}
+::-webkit-scrollbar-thumb {background: #cbd5e1; border-radius: 10px;}
+::-webkit-scrollbar-thumb:hover {background: var(--g500, #22c55e);}
+html {scrollbar-width: thin;scrollbar-color: #cbd5e1 transparent;}
 
 @media (max-width:520px){
   .card{padding:2.5rem 2rem;}
@@ -193,6 +195,11 @@ html {
         <div class="input-wrapper">
           <input type="password" name="password" class="form-input" placeholder="••••••••" required>
           <i class="fas fa-key input-icon"></i>
+        </div>
+        <!-- ✅ Password Requirements Info -->
+        <div class="password-info">
+          <i class="fas fa-info-circle"></i>
+          <span>รหัสผ่านต้องมีตัวพิมพ์ใหญ่-เล็ก ตัวเลข และอักขระพิเศษ อย่างน้อย 8 ตัว</span>
         </div>
       </div>
       

@@ -13,8 +13,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
     $confirmPassword = $_POST['confirm_password'];
 
+    // ✅ ตรวจสอบรหัสผ่านให้เข้มงวดขึ้น
     if ($password !== $confirmPassword) {
         $error = "รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน";
+    } elseif (strlen($password) < 8) {
+        $error = "รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร";
+    } elseif (!preg_match('/[A-Z]/', $password)) {
+        $error = "รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว (A-Z)";
+    } elseif (!preg_match('/[a-z]/', $password)) {
+        $error = "รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว (a-z)";
+    } elseif (!preg_match('/[0-9]/', $password)) {
+        $error = "รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว (0-9)";
+    } elseif (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
+        $error = "รหัสผ่านต้องมีอักขระพิเศษอย่างน้อย 1 ตัว (!@#$%^&*)";
     } else {
         $checkStmt = $conn->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
         $checkStmt->bind_param("ss", $email, $username);
@@ -63,7 +74,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 @keyframes float2{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(40px,-40px) scale(1.15);}}
 @keyframes float3{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-30px,-30px) scale(.9);}}
 
-.container{max-width:600px;width:100%;position:relative;z-index:1;}
+.container{max-width:620px;width:100%;position:relative;z-index:1;}
 .card{background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border:1px solid rgba(232,240,233,.8);border-radius:32px;padding:3rem 2.8rem;box-shadow:0 25px 70px rgba(34,197,94,.15),0 10px 30px rgba(0,0,0,.05);position:relative;overflow:hidden;}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,var(--g500),var(--t500),var(--g400));opacity:.8;}
 
@@ -90,10 +101,67 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .form-input:focus{border-color:var(--g400);box-shadow:0 0 0 4px rgba(74,222,128,.12);background:#fff;}
 .form-input:focus + .input-icon{color:var(--g500);}
 
+/* ✅ Password Strength Indicator */
+.password-requirements{
+  margin-top:10px;
+  padding:12px 14px;
+  background:var(--g50);
+  border:1px solid var(--g200);
+  border-radius:10px;
+  font-size:.75rem;
+}
+.password-requirements h4{
+  font-size:.8rem;
+  font-weight:700;
+  color:var(--g700);
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.req-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:4px 0;
+  color:var(--sub);
+  transition:color .2s;
+}
+.req-item i{
+  font-size:.7rem;
+  color:#cbd5e1;
+  transition:color .2s;
+}
+.req-item.valid{
+  color:var(--g600);
+  font-weight:600;
+}
+.req-item.valid i{
+  color:var(--g500);
+}
+.password-strength{
+  margin-top:8px;
+  height:4px;
+  background:#e5e7eb;
+  border-radius:2px;
+  overflow:hidden;
+}
+.strength-bar{
+  height:100%;
+  width:0;
+  transition:all .3s;
+  border-radius:2px;
+}
+.strength-bar.weak{width:25%;background:#ef4444;}
+.strength-bar.fair{width:50%;background:#f59e0b;}
+.strength-bar.good{width:75%;background:#3b82f6;}
+.strength-bar.strong{width:100%;background:var(--g500);}
+
 .btn-register{background:linear-gradient(135deg,var(--g500),var(--t500));color:#fff;font-size:.88rem;font-weight:700;padding:14px 28px;border-radius:12px;border:none;cursor:pointer;transition:all .3s;box-shadow:0 6px 20px rgba(34,197,94,.35);width:100%;font-family:'Kanit',sans-serif;position:relative;overflow:hidden;margin-top:.8rem;}
 .btn-register::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.25),transparent);transform:translateX(-100%);transition:transform .7s;}
 .btn-register:hover::before{transform:translateX(100%);}
 .btn-register:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(34,197,94,.45);}
+.btn-register:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 
 .login-link{text-align:center;margin-top:1.8rem;padding:16px;background:var(--g50);border-radius:12px;border:2px dashed var(--g200);}
 .login-link p{font-size:.85rem;color:var(--sub);}
@@ -135,7 +203,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     </div>
     <?php endif; ?>
 
-    <form action="" method="POST">
+    <form action="" method="POST" id="registerForm">
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label">
@@ -178,29 +246,56 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
         </div>
       </div>
 
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-lock"></i> รหัสผ่าน
-          </label>
-          <div class="input-wrapper">
-            <input type="password" name="password" class="form-input" placeholder="••••••••" required>
-            <i class="fas fa-key input-icon"></i>
-          </div>
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fas fa-lock"></i> รหัสผ่าน
+        </label>
+        <div class="input-wrapper">
+          <input type="password" name="password" id="password" class="form-input" placeholder="••••••••" required>
+          <i class="fas fa-key input-icon"></i>
         </div>
-
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-lock"></i> ยืนยันรหัสผ่าน
-          </label>
-          <div class="input-wrapper">
-            <input type="password" name="confirm_password" class="form-input" placeholder="••••••••" required>
-            <i class="fas fa-key input-icon"></i>
+        
+        <!-- ✅ Password Requirements -->
+        <div class="password-requirements">
+          <h4><i class="fas fa-shield-alt"></i> ความแข็งแกร่งของรหัสผ่าน</h4>
+          <div class="req-item" id="req-length">
+            <i class="fas fa-circle"></i>
+            <span>อย่างน้อย 8 ตัวอักษร</span>
+          </div>
+          <div class="req-item" id="req-upper">
+            <i class="fas fa-circle"></i>
+            <span>ตัวพิมพ์ใหญ่ (A-Z)</span>
+          </div>
+          <div class="req-item" id="req-lower">
+            <i class="fas fa-circle"></i>
+            <span>ตัวพิมพ์เล็ก (a-z)</span>
+          </div>
+          <div class="req-item" id="req-number">
+            <i class="fas fa-circle"></i>
+            <span>ตัวเลข (0-9)</span>
+          </div>
+          <div class="req-item" id="req-special">
+            <i class="fas fa-circle"></i>
+            <span>อักขระพิเศษ (!@#$%^&*)</span>
+          </div>
+          <div class="password-strength">
+            <div class="strength-bar" id="strengthBar"></div>
           </div>
         </div>
       </div>
 
-      <button type="submit" class="btn-register">
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fas fa-lock"></i> ยืนยันรหัสผ่าน
+        </label>
+        <div class="input-wrapper">
+          <input type="password" name="confirm_password" id="confirmPassword" class="form-input" placeholder="••••••••" required>
+          <i class="fas fa-key input-icon"></i>
+        </div>
+        <div id="matchMessage" style="margin-top:8px;font-size:.75rem;"></div>
+      </div>
+
+      <button type="submit" class="btn-register" id="submitBtn">
         <i class="fas fa-user-plus" style="margin-right:8px;"></i> ลงทะเบียน
       </button>
     </form>
@@ -214,6 +309,112 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     </div>
   </div>
 </div>
+
+<script>
+const password = document.getElementById('password');
+const confirmPassword = document.getElementById('confirmPassword');
+const submitBtn = document.getElementById('submitBtn');
+const strengthBar = document.getElementById('strengthBar');
+
+// Password validation
+password.addEventListener('input', function() {
+  const value = this.value;
+  let strength = 0;
+  
+  // Check length
+  const hasLength = value.length >= 8;
+  document.getElementById('req-length').classList.toggle('valid', hasLength);
+  if (hasLength) strength++;
+  
+  // Check uppercase
+  const hasUpper = /[A-Z]/.test(value);
+  document.getElementById('req-upper').classList.toggle('valid', hasUpper);
+  if (hasUpper) strength++;
+  
+  // Check lowercase
+  const hasLower = /[a-z]/.test(value);
+  document.getElementById('req-lower').classList.toggle('valid', hasLower);
+  if (hasLower) strength++;
+  
+  // Check number
+  const hasNumber = /[0-9]/.test(value);
+  document.getElementById('req-number').classList.toggle('valid', hasNumber);
+  if (hasNumber) strength++;
+  
+  // Check special character
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(value);
+  document.getElementById('req-special').classList.toggle('valid', hasSpecial);
+  if (hasSpecial) strength++;
+  
+  // Update strength bar
+  strengthBar.className = 'strength-bar';
+  if (strength === 0) strengthBar.className = 'strength-bar';
+  else if (strength <= 2) strengthBar.className = 'strength-bar weak';
+  else if (strength === 3) strengthBar.className = 'strength-bar fair';
+  else if (strength === 4) strengthBar.className = 'strength-bar good';
+  else strengthBar.className = 'strength-bar strong';
+  
+  checkPasswordMatch();
+});
+
+// Confirm password validation
+confirmPassword.addEventListener('input', checkPasswordMatch);
+
+function checkPasswordMatch() {
+  const matchMsg = document.getElementById('matchMessage');
+  if (confirmPassword.value === '') {
+    matchMsg.innerHTML = '';
+    return;
+  }
+  
+  if (password.value === confirmPassword.value) {
+    matchMsg.innerHTML = '<span style="color:var(--g600);"><i class="fas fa-check-circle"></i> รหัสผ่านตรงกัน</span>';
+  } else {
+    matchMsg.innerHTML = '<span style="color:#dc2626;"><i class="fas fa-times-circle"></i> รหัสผ่านไม่ตรงกัน</span>';
+  }
+}
+
+// Form validation
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+  const pwd = password.value;
+  
+  if (pwd.length < 8) {
+    e.preventDefault();
+    alert('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+    return;
+  }
+  
+  if (!/[A-Z]/.test(pwd)) {
+    e.preventDefault();
+    alert('รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว (A-Z)');
+    return;
+  }
+  
+  if (!/[a-z]/.test(pwd)) {
+    e.preventDefault();
+    alert('รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว (a-z)');
+    return;
+  }
+  
+  if (!/[0-9]/.test(pwd)) {
+    e.preventDefault();
+    alert('รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว (0-9)');
+    return;
+  }
+  
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
+    e.preventDefault();
+    alert('รหัสผ่านต้องมีอักขระพิเศษอย่างน้อย 1 ตัว (!@#$%^&*)');
+    return;
+  }
+  
+  if (pwd !== confirmPassword.value) {
+    e.preventDefault();
+    alert('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
+    return;
+  }
+});
+</script>
 
 </body>
 </html>
