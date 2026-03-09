@@ -206,7 +206,7 @@ main {
       <!-- ── BODY STATS ── -->
       <div class="form-card rv rv1">
         <div class="section-label">
-          <span class="section-icon" style="background:#f0fdf4;border:1px solid var(--g200);">⚖️</span>
+          <span class="section-icon" style="background:#f0fdf4;border:1px solid var(--g200);"><i class="fas fa-notes-medical"></i></span>
           ข้อมูลร่างกาย
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
