@@ -697,13 +697,30 @@ main {
   <main>
 
     <div class="rv rv1" style="margin-bottom:1.8rem;">
+      <?php
+        // คำนวณเวลาปัจจุบันสำหรับคำทักทายอัจฉริยะ
+        $hour = date('H');
+        if ($hour >= 6 && $hour < 12) {
+            $greet_time = "อรุณสวัสดิ์"; 
+            $greet_icon = "🌅";
+            $greet_sub = "เริ่มต้นวันใหม่ด้วยมื้ออาหารที่ดี";
+        } elseif ($hour >= 12 && $hour < 18) {
+            $greet_time = "สวัสดีตอนบ่าย"; 
+            $greet_icon = "☀️";
+            $greet_sub = "เติมพลังยามบ่ายกันเถอะ";
+        } else {
+            $greet_time = "สวัสดีตอนเย็น"; 
+            $greet_icon = "🌙";
+            $greet_sub = "พักผ่อนและดูแลสุขภาพนะ";
+        }
+      ?>
       <p style="font-size:.75rem;color:var(--muted);font-weight:400;letter-spacing:.04em;margin-bottom:4px;">
-        ยินดีต้อนรับกลับมา 👋
+        <?= $greet_sub ?> <?= $greet_icon ?>
       </p>
       <h1 style="font-family:'Nunito',sans-serif;font-size:1.7rem;font-weight:800;color:var(--txt);line-height:1.1;">
-        สวัสดี, <span style="color:var(--g600);"><?php echo htmlspecialchars($firstName); ?>!</span>
+        <?= $greet_time ?>, <span style="color:var(--g600);"><?php echo htmlspecialchars($firstName); ?>!</span>
       </h1>
-      <div class="gline" style="width:52px;margin-top:10px;"></div>
+      <div class="gline" style="background:var(--g500);height:4px;border-radius:2px;width:52px;margin-top:10px;"></div>
     </div>
 
     <div class="rv rv2" style="display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:18px;margin-bottom:2rem;">
@@ -1092,6 +1109,65 @@ main {
   </main>
 
 </div>
+
+<div id="aiPromoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); z-index:9999; align-items:center; justify-content:center; opacity:0; transition:opacity 0.3s ease;">
+    <div style="background:#fff; border-radius:24px; padding:40px 30px; max-width:380px; width:90%; text-align:center; box-shadow:0 25px 50px rgba(0,0,0,0.15); transform:translateY(20px); transition:transform 0.3s ease;" id="aiPromoContent">
+        
+        <div style="width:80px; height:80px; background:linear-gradient(135deg, #22c55e, #14b8a6); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.5rem; color:#fff; margin:0 auto 20px; box-shadow:0 10px 20px rgba(34,197,94,0.3);">
+            <i class="fas fa-robot"></i>
+        </div>
+        
+        <h3 style="font-family:'Nunito',sans-serif; font-weight:800; font-size:1.4rem; color:#1a2e1a; margin-bottom:10px;">มีผู้ช่วยคิดเมนูหรือยัง?</h3>
+        <p style="font-size:0.9rem; color:#4b6b4e; margin-bottom:24px; line-height:1.6;">
+            ระบบของเรามี <b>AI Chef</b> อัจฉริยะที่พร้อมช่วยคุณจัดตารางอาหาร คอยแนะนำเมนูที่เหมาะกับสุขภาพและโรคประจำตัวของคุณโดยเฉพาะ!
+        </p>
+        
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <a href="ai_chef.php" style="background:linear-gradient(135deg, #22c55e, #14b8a6); color:#fff; text-decoration:none; padding:14px; border-radius:14px; font-weight:600; font-size:0.95rem; box-shadow:0 8px 16px rgba(34,197,94,0.25); transition:all 0.2s;">
+                <i class="fas fa-magic"></i> ลองคุยกับ AI เลย
+            </a>
+            <button onclick="closeAiPromo()" style="background:transparent; border:none; color:#8da98f; font-weight:600; font-size:0.85rem; padding:10px; cursor:pointer; font-family:'Kanit',sans-serif; text-decoration:underline;">
+                ไว้คราวหน้า
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // เช็คใน sessionStorage ว่ารอบนี้ล็อกอินเข้ามาแล้วเคยเห็น Popup หรือยัง?
+    // (ทำให้มันแสดงแค่ครั้งแรกที่เปิดเว็บขึ้นมา จะได้ไม่น่ารำคาญเวลาผู้ใช้กดเปลี่ยนหน้าไปมาครับ)
+    if (!sessionStorage.getItem('ai_promo_shown')) {
+        const modal = document.getElementById('aiPromoModal');
+        const content = document.getElementById('aiPromoContent');
+        
+        modal.style.display = 'flex';
+        
+        // เล่น Animation เลื่อนขึ้นมาแบบสมูทๆ
+        setTimeout(() => {
+            modal.style.opacity = '1';
+            content.style.transform = 'translateY(0)';
+        }, 50);
+        
+        // บันทึกว่า "รอบนี้แสดงไปแล้วนะ"
+        sessionStorage.setItem('ai_promo_shown', 'true');
+    }
+});
+
+function closeAiPromo() {
+    const modal = document.getElementById('aiPromoModal');
+    const content = document.getElementById('aiPromoContent');
+    
+    // เล่น Animation ขาลง
+    modal.style.opacity = '0';
+    content.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+}
+</script>
+
 <script>
 function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');
