@@ -675,6 +675,68 @@ main {
     padding: 20px;
   }
 }
+
+.ai-modal-overlay {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    z-index: 9999; display: none; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.4s ease;
+}
+.ai-modal-card {
+    background: #ffffff; border-radius: 28px; width: 90%; max-width: 400px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden; position: relative;
+    transform: scale(0.95) translateY(20px); opacity: 0;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ai-modal-overlay.show { opacity: 1; display: flex; }
+.ai-modal-overlay.show .ai-modal-card { transform: scale(1) translateY(0); opacity: 1; }
+
+.ai-modal-header {
+    background: linear-gradient(135deg, var(--g50), var(--g100));
+    padding: 40px 20px 30px; text-align: center; position: relative;
+}
+.ai-modal-close {
+    position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
+    background: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #64748b; font-size: 0.85rem; cursor: pointer; border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all 0.2s ease;
+}
+.ai-modal-close:hover { background: #fef2f2; color: #dc2626; transform: scale(1.05); }
+
+.ai-icon-wrapper {
+    width: 80px; height: 80px; background: #ffffff; border-radius: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; color: var(--g500); margin: 0 auto;
+    box-shadow: 0 12px 24px -6px rgba(34, 197, 94, 0.25);
+    transform: rotate(-5deg); transition: transform 0.3s ease;
+}
+.ai-modal-card:hover .ai-icon-wrapper { transform: rotate(0deg) scale(1.05); }
+
+.ai-modal-badge {
+    position: absolute; top: 20px; left: 20px; background: #ffffff;
+    padding: 5px 12px; border-radius: 12px; font-size: 0.65rem; font-weight: 800;
+    color: var(--t500); letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    display: flex; align-items: center; gap: 4px; text-transform: uppercase;
+}
+
+.ai-modal-body { padding: 30px 32px 40px; text-align: center; }
+.ai-modal-title { font-family: 'Nunito', sans-serif; font-size: 1.35rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; line-height: 1.3; }
+.ai-modal-desc { font-size: 0.88rem; color: #64748b; line-height: 1.6; margin-bottom: 28px; }
+
+.ai-btn-primary {
+    background: linear-gradient(135deg, var(--g500), var(--t500));
+    color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 16px;
+    font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 10px 20px -5px rgba(34, 197, 94, 0.4); transition: all 0.3s ease; width: 100%;
+}
+.ai-btn-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 25px -5px rgba(34, 197, 94, 0.5); color: #ffffff; }
+
+.ai-btn-secondary {
+    background: transparent; border: none; color: #94a3b8; font-weight: 600; font-size: 0.85rem;
+    margin-top: 16px; cursor: pointer; transition: color 0.2s ease; font-family: 'Kanit', sans-serif;
+}
+.ai-btn-secondary:hover { color: #64748b; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -1110,23 +1172,24 @@ main {
 
 </div>
 
-<div id="aiPromoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); z-index:9999; align-items:center; justify-content:center; opacity:0; transition:opacity 0.3s ease;">
-    <div style="background:#fff; border-radius:24px; padding:40px 30px; max-width:380px; width:90%; text-align:center; box-shadow:0 25px 50px rgba(0,0,0,0.15); transform:translateY(20px); transition:transform 0.3s ease;" id="aiPromoContent">
-        
-        <div style="width:80px; height:80px; background:linear-gradient(135deg, #22c55e, #14b8a6); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.5rem; color:#fff; margin:0 auto 20px; box-shadow:0 10px 20px rgba(34,197,94,0.3);">
-            <i class="fas fa-robot"></i>
+<div id="premiumAiModal" class="ai-modal-overlay">
+    <div class="ai-modal-card">
+        <div class="ai-modal-header">
+            <div class="ai-modal-badge"><i class="fas fa-sparkles"></i> New Feature</div>
+            <button class="ai-modal-close" onclick="closePremiumAiModal()"><i class="fas fa-times"></i></button>
+            <div class="ai-icon-wrapper">
+                <i class="fas fa-robot"></i>
+            </div>
         </div>
-        
-        <h3 style="font-family:'Nunito',sans-serif; font-weight:800; font-size:1.4rem; color:#1a2e1a; margin-bottom:10px;">มีผู้ช่วยคิดเมนูหรือยัง?</h3>
-        <p style="font-size:0.9rem; color:#4b6b4e; margin-bottom:24px; line-height:1.6;">
-            ระบบของเรามี <b>AI Chef</b> อัจฉริยะที่พร้อมช่วยคุณจัดตารางอาหาร คอยแนะนำเมนูที่เหมาะกับสุขภาพและโรคประจำตัวของคุณโดยเฉพาะ!
-        </p>
-        
-        <div style="display:flex; flex-direction:column; gap:10px;">
-            <a href="ai_chef.php" style="background:linear-gradient(135deg, #22c55e, #14b8a6); color:#fff; text-decoration:none; padding:14px; border-radius:14px; font-weight:600; font-size:0.95rem; box-shadow:0 8px 16px rgba(34,197,94,0.25); transition:all 0.2s;">
-                <i class="fas fa-magic"></i> ลองคุยกับ AI เลย
+        <div class="ai-modal-body">
+            <h3 class="ai-modal-title">ให้ AI จัดมื้ออาหารให้คุณไหม?</h3>
+            <p class="ai-modal-desc">
+                หมดปัญหา "วันนี้กินอะไรดี?" ให้ <b>AI Chef</b> วิเคราะห์สุขภาพและโรคประจำตัวของคุณ เพื่อจัดตารางเมนูสุดพิเศษในคลิกเดียว!
+            </p>
+            <a href="ai_chef.php" class="ai-btn-primary">
+                <i class="fas fa-magic"></i> เริ่มคุยกับ AI Chef
             </a>
-            <button onclick="closeAiPromo()" style="background:transparent; border:none; color:#8da98f; font-weight:600; font-size:0.85rem; padding:10px; cursor:pointer; font-family:'Kanit',sans-serif; text-decoration:underline;">
+            <button class="ai-btn-secondary" onclick="closePremiumAiModal()">
                 ไว้คราวหน้า
             </button>
         </div>
@@ -1135,36 +1198,27 @@ main {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // เช็คใน sessionStorage ว่ารอบนี้ล็อกอินเข้ามาแล้วเคยเห็น Popup หรือยัง?
-    // (ทำให้มันแสดงแค่ครั้งแรกที่เปิดเว็บขึ้นมา จะได้ไม่น่ารำคาญเวลาผู้ใช้กดเปลี่ยนหน้าไปมาครับ)
-    if (!sessionStorage.getItem('ai_promo_shown')) {
-        const modal = document.getElementById('aiPromoModal');
-        const content = document.getElementById('aiPromoContent');
-        
+    // รีเซ็ตคีย์เดิม (ถ้าเคยใช้โค้ดเก่า) และใช้คีย์ใหม่ เพื่อให้ชัวร์ว่ามันจะเด้งขึ้นมาให้ทดสอบครับ
+    if (!sessionStorage.getItem('premium_ai_promo_shown')) {
+        const modal = document.getElementById('premiumAiModal');
         modal.style.display = 'flex';
         
-        // เล่น Animation เลื่อนขึ้นมาแบบสมูทๆ
-        setTimeout(() => {
-            modal.style.opacity = '1';
-            content.style.transform = 'translateY(0)';
-        }, 50);
+        // บังคับให้เบราว์เซอร์อ่านค่า (Reflow) เพื่อให้ Animation ทำงานสมบูรณ์
+        void modal.offsetWidth;
         
-        // บันทึกว่า "รอบนี้แสดงไปแล้วนะ"
-        sessionStorage.setItem('ai_promo_shown', 'true');
+        modal.classList.add('show');
+        sessionStorage.setItem('premium_ai_promo_shown', 'true');
     }
 });
 
-function closeAiPromo() {
-    const modal = document.getElementById('aiPromoModal');
-    const content = document.getElementById('aiPromoContent');
+function closePremiumAiModal() {
+    const modal = document.getElementById('premiumAiModal');
+    modal.classList.remove('show');
     
-    // เล่น Animation ขาลง
-    modal.style.opacity = '0';
-    content.style.transform = 'translateY(20px)';
-    
+    // รอให้ Animation ตอนปิดเล่นจบก่อน ค่อยซ่อน Element
     setTimeout(() => {
         modal.style.display = 'none';
-    }, 300);
+    }, 400); 
 }
 </script>
 
