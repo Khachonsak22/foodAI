@@ -718,7 +718,7 @@ main {
         <?= $greet_sub ?> <?= $greet_icon ?>
       </p>
       <h1 style="font-family:'Nunito',sans-serif;font-size:1.7rem;font-weight:800;color:var(--txt);line-height:1.1;">
-        <?= $greet_time ?>, คุณ<span style="color:var(--g600);"><?php echo htmlspecialchars($firstName); ?>!</span>
+        <?= $greet_time ?>, <span style="color:var(--g600);">คุณ<?php echo htmlspecialchars($firstName); ?>!</span>
       </h1>
       <div class="gline" style="background:var(--g500);height:4px;border-radius:2px;width:52px;margin-top:10px;"></div>
     </div>
