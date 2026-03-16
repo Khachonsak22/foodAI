@@ -239,7 +239,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       <i class="fas fa-bars"></i>
     </button>
     <div style="flex:1;">
-      <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:#2b3452;">จัดการผู้ใช้ระบบ (Users)</div>
+      <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:#2b3452;">จัดการผู้ใช้ระบบ</div>
       <div style="font-size:.75rem;color:var(--muted);"><i class="fas fa-users me-1"></i> สมาชิกทั้งหมด <?= number_format($total) ?> คน</div>
     </div>
   </header>
