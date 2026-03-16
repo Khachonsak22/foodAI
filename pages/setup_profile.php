@@ -196,7 +196,7 @@ main {
       <div class="topbar-title">ข้อมูลสุขภาพ</div>
       <div class="topbar-sub">ระบุข้อมูลให้ครบเพื่อให้ AI วิเคราะห์ได้แม่นยำ</div>
     </div>
-    <div style="margin-left:auto;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--g500),var(--t500));display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 3px 10px rgba(34,197,94,.3);">📏</div>
+    <div style="margin-left:auto;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--g500),var(--t500));display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 3px 10px rgba(34,197,94,.3);"><i class="bi bi-person" style="color: #ffffff;"></i></div>
   </header>
 
   <main style="padding:2rem 2.5rem 3.5rem;max-width:860px;width:100%;">
