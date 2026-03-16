@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <body>
                 <div class='container'>
                     <div class='header'>
-                        <h1>🍽️ FoodAI</h1>
+                        <h1>FoodAI</h1>
                         <p style='color: #dcfce7; margin: 10px 0 0 0;'>Password Reset Request</p>
                     </div>
                     <div class='content'>
@@ -254,8 +254,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .form-group{margin-bottom:1.3rem;}
 .form-label{font-size:.82rem;font-weight:600;color:var(--sub);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
 .form-label i{color:var(--g500);font-size:.75rem;}
+
+/* Added wrapper and toggle classes for password eye icon */
+.password-wrapper { position: relative; }
 .form-input{width:100%;padding:13px 18px;background:#fff;border:2px solid #e8f0e9;border-radius:12px;font-family:'Kanit',sans-serif;font-size:.9rem;color:var(--txt);outline:none;transition:all .3s;}
 .form-input:focus{border-color:var(--g400);box-shadow:0 0 0 4px rgba(74,222,128,.12);}
+.form-input.pwd-input { padding-right: 45px; }
+.toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; padding: 0; outline: none; transition: color 0.2s; font-size: 1rem; }
+.toggle-password:hover { color: var(--g600); }
 
 .otp-inputs{display:flex;gap:10px;justify-content:center;margin:1.5rem 0;}
 .otp-input{width:56px;height:56px;text-align:center;font-size:1.5rem;font-weight:700;font-family:'Nunito',sans-serif;background:#fff;border:2px solid #e8f0e9;border-radius:14px;outline:none;transition:all .2s;}
@@ -263,8 +269,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 
 .password-requirements{margin-top:10px;padding:12px 14px;background:var(--g50);border:1px solid var(--g200);border-radius:10px;font-size:.75rem;}
 .password-requirements h4{font-size:.8rem;font-weight:700;color:var(--g700);margin-bottom:8px;}
-.req-item{display:flex;align-items:center;gap:6px;margin:4px 0;color:var(--sub);}
-.req-item i{font-size:.7rem;color:#cbd5e1;}
+.req-item{display:flex;align-items:center;gap:6px;margin:4px 0;color:var(--sub); transition: all 0.3s;}
+.req-item i{font-size:.7rem;color:#cbd5e1; transition: all 0.3s;}
+
+/* CSS สำหรับตอนที่เงื่อนไขผ่านแล้ว (Real-time Validation) */
+.req-item.valid { color: var(--g700); font-weight: 500; }
+.req-item.valid i { color: var(--g500); }
 
 .btn-primary{background:linear-gradient(135deg,var(--g500),var(--t500));color:#fff;font-size:.9rem;font-weight:700;padding:14px 28px;border-radius:13px;border:none;cursor:pointer;transition:all .3s;box-shadow:0 6px 20px rgba(34,197,94,.35);width:100%;font-family:'Kanit',sans-serif;position:relative;overflow:hidden;}
 .btn-primary::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.25),transparent);transform:translateX(-100%);transition:transform .7s;}
@@ -374,22 +384,27 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     <h1 class="title">ตั้งรหัสผ่านใหม่</h1>
     <p class="subtitle">กรุณากรอกรหัสผ่านใหม่ของคุณ</p>
     
-    <form method="POST">
+    <form method="POST" id="resetForm">
       <input type="hidden" name="action" value="reset_password">
       
       <div class="form-group">
         <label class="form-label">
           <i class="fas fa-lock"></i> รหัสผ่านใหม่
         </label>
-        <input type="password" name="new_password" id="newPassword" class="form-input" placeholder="อย่างน้อย 8 ตัวอักษร" required autofocus>
+        <div class="password-wrapper">
+          <input type="password" name="new_password" id="newPassword" class="form-input pwd-input" placeholder="อย่างน้อย 8 ตัวอักษร" required autofocus>
+          <button type="button" class="toggle-password" onclick="toggleVisibility('newPassword', 'iconNewPwd')">
+            <i class="fas fa-eye" id="iconNewPwd"></i>
+          </button>
+        </div>
         
         <div class="password-requirements">
           <h4><i class="fas fa-shield-alt"></i> ความแข็งแกร่งของรหัสผ่าน</h4>
-          <div class="req-item"><i class="fas fa-circle"></i> <span>อย่างน้อย 8 ตัวอักษร</span></div>
-          <div class="req-item"><i class="fas fa-circle"></i> <span>ตัวพิมพ์ใหญ่ (A-Z)</span></div>
-          <div class="req-item"><i class="fas fa-circle"></i> <span>ตัวพิมพ์เล็ก (a-z)</span></div>
-          <div class="req-item"><i class="fas fa-circle"></i> <span>ตัวเลข (0-9)</span></div>
-          <div class="req-item"><i class="fas fa-circle"></i> <span>อักขระพิเศษ (!@#$%^&*)</span></div>
+          <div class="req-item" id="req-length"><i class="fas fa-circle"></i> <span>อย่างน้อย 8 ตัวอักษร</span></div>
+          <div class="req-item" id="req-upper"><i class="fas fa-circle"></i> <span>ตัวพิมพ์ใหญ่ (A-Z)</span></div>
+          <div class="req-item" id="req-lower"><i class="fas fa-circle"></i> <span>ตัวพิมพ์เล็ก (a-z)</span></div>
+          <div class="req-item" id="req-number"><i class="fas fa-circle"></i> <span>ตัวเลข (0-9)</span></div>
+          <div class="req-item" id="req-special"><i class="fas fa-circle"></i> <span>อักขระพิเศษ (!@#$%^&*)</span></div>
         </div>
       </div>
       
@@ -397,10 +412,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
         <label class="form-label">
           <i class="fas fa-lock"></i> ยืนยันรหัสผ่าน
         </label>
-        <input type="password" name="confirm_password" class="form-input" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
+        <div class="password-wrapper">
+          <input type="password" name="confirm_password" id="confirmPassword" class="form-input pwd-input" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
+          <button type="button" class="toggle-password" onclick="toggleVisibility('confirmPassword', 'iconConfirmPwd')">
+            <i class="fas fa-eye" id="iconConfirmPwd"></i>
+          </button>
+        </div>
       </div>
       
-      <button type="submit" class="btn-primary">
+      <button type="submit" class="btn-primary" id="submitBtn">
         <i class="fas fa-save" style="margin-right:8px;"></i> บันทึกรหัสผ่านใหม่
       </button>
     </form>
@@ -424,6 +444,57 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 </div>
 
 <script>
+// Toggle Password Visibility
+function toggleVisibility(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+// Real-time Password Validation
+const newPasswordInput = document.getElementById('newPassword');
+if (newPasswordInput) {
+  newPasswordInput.addEventListener('input', function() {
+    const val = this.value;
+    
+    // ตั้งค่าเงื่อนไข (Regex)
+    const rules = [
+      { id: 'req-length', regex: /.{8,}/ }, // 8 ตัวขึ้นไป
+      { id: 'req-upper', regex: /[A-Z]/ },   // พิมพ์ใหญ่
+      { id: 'req-lower', regex: /[a-z]/ },   // พิมพ์เล็ก
+      { id: 'req-number', regex: /[0-9]/ },  // ตัวเลข
+      { id: 'req-special', regex: /[!@#$%^&*(),.?":{}|<>]/ } // อักขระพิเศษ
+    ];
+    
+    // ตรวจสอบแต่ละเงื่อนไข
+    rules.forEach(rule => {
+      const el = document.getElementById(rule.id);
+      const icon = el.querySelector('i');
+      
+      if (rule.regex.test(val)) {
+        // หากผ่านเงื่อนไข ให้เปลี่ยนคลาสเป็น valid และเปลี่ยนไอคอน
+        el.classList.add('valid');
+        icon.classList.remove('fa-circle');
+        icon.classList.add('fa-check-circle');
+      } else {
+        // หากไม่ผ่านเงื่อนไข ให้ลบคลาส valid ออก และกลับไปใช้ไอคอนวงกลม
+        el.classList.remove('valid');
+        icon.classList.remove('fa-check-circle');
+        icon.classList.add('fa-circle');
+      }
+    });
+  });
+}
+
 // OTP Input handling
 const otpInputs = document.querySelectorAll('.otp-input');
 if (otpInputs.length > 0) {
