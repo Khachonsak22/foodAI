@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 
                 // อย่าลืมแก้ไข 2 บรรทัดนี้ให้เป็นข้อมูลของคุณ
                 $mail->Username   = 'khachonc22@gmail.com'; 
-                $mail->Password   = 'gnvh qhmb trlz lnzy'; 
+                $mail->Password   = 'gnvhqhmbtrlzlnzy'; 
                 
                 $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
