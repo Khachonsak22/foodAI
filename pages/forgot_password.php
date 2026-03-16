@@ -33,14 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $otp = sprintf("%06d", mt_rand(0, 999999));
             $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
             
-            // Store OTP in session (In production, store in database)
-            $_SESSION['password_reset'] = [
-                'user_id' => $user['id'],
-                'email' => $user['email'],
-                // โค้ดเดิม: สร้าง OTP และเก็บลง Session
-            $otp = sprintf("%06d", mt_rand(0, 999999)),
-            $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes')),
-            ];
+            // Store OTP in session
             $_SESSION['password_reset'] = [
                 'user_id' => $user['id'],
                 'email' => $user['email'],
@@ -84,6 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
             header("Location: forgot_password.php?step=verify");
             exit();
+        } else {
+            $error_msg = 'ไม่พบข้อมูลผู้ใช้งานนี้ในระบบ';
+        }
     }
 }
 
@@ -153,7 +149,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $error_msg = 'เกิดข้อผิดพลาดในการบันทึก';
         }
     }
-  }
 }
 ?>
 <!DOCTYPE html>
@@ -232,7 +227,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     </div>
     <?php endif; ?>
     
-    <!-- STEP INDICATOR -->
     <div class="steps">
       <div class="step <?= $step==='request'?'active':'' ?>"></div>
       <div class="step <?= $step==='verify'?'active':'' ?>"></div>
@@ -240,7 +234,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     </div>
     
     <?php if ($step === 'request'): ?>
-    <!-- STEP 1: REQUEST OTP -->
     <h1 class="title">ลืมรหัสผ่าน</h1>
     <p class="subtitle">กรอกอีเมลหรือชื่อผู้ใช้เพื่อรับรหัส OTP</p>
     
@@ -258,7 +251,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     </form>
     
     <?php elseif ($step === 'verify'): ?>
-    <!-- STEP 2: VERIFY OTP -->
     <h1 class="title">ยืนยันรหัส OTP</h1>
     <p class="subtitle">
       กรอกรหัส 6 หลักที่ส่งไปยัง<br>
@@ -286,7 +278,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     </form>
     
     <?php elseif ($step === 'reset' && isset($_SESSION['password_reset']['verified'])): ?>
-    <!-- STEP 3: RESET PASSWORD -->
     <h1 class="title">ตั้งรหัสผ่านใหม่</h1>
     <p class="subtitle">กรุณากรอกรหัสผ่านใหม่ของคุณ</p>
     
@@ -309,7 +300,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     </form>
     
     <?php else: ?>
-    <!-- INVALID STEP -->
     <div class="alert error">
       <i class="fas fa-exclamation-triangle"></i>
       <span>เซสชันไม่ถูกต้อง กรุณาเริ่มใหม่</span>
