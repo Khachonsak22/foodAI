@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'expires_at' => $expires_at
             ];
             
-            // ✅ เตรียมข้อมูลสำหรับส่งอีเมล
+            // เตรียมข้อมูลสำหรับส่งอีเมล
             $to = $user['email'];
             $subject = "🔐 รหัส OTP สำหรับรีเซ็ตรหัสผ่าน - FoodAI";
             $user_name = $user['first_name'] ?: $user['username'];
@@ -108,16 +108,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $mail->Host       = 'smtp.gmail.com';
                 $mail->SMTPAuth   = true;
                 
-                // 🔴 อย่าลืมแก้ไข 2 บรรทัดนี้ให้เป็นข้อมูลของคุณ
-                $mail->Username   = 'your_email@gmail.com'; 
+                // อย่าลืมแก้ไข 2 บรรทัดนี้ให้เป็นข้อมูลของคุณ
+                $mail->Username   = 'khachonc22@gmail.com'; 
                 $mail->Password   = 'รหัสผ่านแอป16หลัก'; 
                 
                 $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
                 $mail->CharSet    = 'UTF-8';
 
-                // 🔴 อย่าลืมแก้ไขอีเมลผู้ส่งตรงนี้ด้วยครับ
-                $mail->setFrom('your_email@gmail.com', 'FoodAI Support');
+                // อย่าลืมแก้ไขอีเมลผู้ส่งตรงนี้ด้วยครับ
+                $mail->setFrom('khachonc22@gmail.com', 'FoodAI Support');
                 $mail->addAddress($to);
 
                 $mail->isHTML(true);
@@ -127,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $mail->send();
                 $success_msg = "ส่งรหัส OTP ไปยัง " . substr($user['email'], 0, 3) . "***@*** แล้ว";
             } catch (Exception $e) {
-                // ✅ โหมดทดสอบ: แสดง OTP บนหน้าจอ หากส่งเมลพลาด
+                // โหมดทดสอบ: แสดง OTP บนหน้าจอ หากส่งเมลพลาด
                 $success_msg = "[โหมดทดสอบ] OTP ของคุณคือ: <strong>$otp</strong> (ระบบส่งอีเมลยังไม่พร้อม)";
             }
             // ───────────────────────────────────────────────
