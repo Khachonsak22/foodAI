@@ -41,11 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'expires_at' => $expires_at
             ];
             
-            // ✅ ส่งอีเมลแบบสวยงาม
+            // ✅ เตรียมข้อมูลสำหรับส่งอีเมล
             $to = $user['email'];
             $subject = "🔐 รหัส OTP สำหรับรีเซ็ตรหัสผ่าน - FoodAI";
             $user_name = $user['first_name'] ?: $user['username'];
             
+            // รูปแบบอีเมลของคุณที่ออกแบบไว้
             $message = "
             <!DOCTYPE html>
             <html>
@@ -97,16 +98,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             </html>
             ";
             
-            $headers = "MIME-Version: 1.0" . "\r\n";
-            $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-            $headers .= "From: FoodAI <noreply@foodai.com>" . "\r\n";
+            // ── โค้ดที่อัปเดต: การส่งอีเมลด้วย PHPMailer + Gmail SMTP ──
+            require '../vendor/autoload.php'; 
             
-            if(mail($to, $subject, $message, $headers)) {
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            
+            try {
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                
+                // 🔴 อย่าลืมแก้ไข 2 บรรทัดนี้ให้เป็นข้อมูลของคุณ
+                $mail->Username   = 'your_email@gmail.com'; 
+                $mail->Password   = 'รหัสผ่านแอป16หลัก'; 
+                
+                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+                $mail->CharSet    = 'UTF-8';
+
+                // 🔴 อย่าลืมแก้ไขอีเมลผู้ส่งตรงนี้ด้วยครับ
+                $mail->setFrom('your_email@gmail.com', 'FoodAI Support');
+                $mail->addAddress($to);
+
+                $mail->isHTML(true);
+                $mail->Subject = $subject;
+                $mail->Body    = $message;
+
+                $mail->send();
                 $success_msg = "ส่งรหัส OTP ไปยัง " . substr($user['email'], 0, 3) . "***@*** แล้ว";
-            } else {
-                // ✅ โหมดทดสอบ: แสดง OTP บนหน้าจอ
+            } catch (Exception $e) {
+                // ✅ โหมดทดสอบ: แสดง OTP บนหน้าจอ หากส่งเมลพลาด
                 $success_msg = "[โหมดทดสอบ] OTP ของคุณคือ: <strong>$otp</strong> (ระบบส่งอีเมลยังไม่พร้อม)";
             }
+            // ───────────────────────────────────────────────
 
             header("Location: forgot_password.php?step=verify");
             exit();
@@ -290,7 +314,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     </div>
     <?php endif; ?>
     
-    <!-- Progress Steps -->
     <div class="steps">
       <div class="step-dot <?= $step==='request'?'active':'' ?>"></div>
       <div class="step-dot <?= $step==='verify'?'active':'' ?>"></div>
@@ -298,7 +321,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     </div>
     
     <?php if ($step === 'request'): ?>
-    <!-- STEP 1: Request OTP -->
     <h1 class="title">ลืมรหัสผ่าน?</h1>
     <p class="subtitle">กรอกอีเมลหรือชื่อผู้ใช้เพื่อรับรหัส OTP สำหรับรีเซ็ตรหัสผ่าน</p>
     
@@ -318,7 +340,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     </form>
     
     <?php elseif ($step === 'verify'): ?>
-    <!-- STEP 2: Verify OTP -->
     <h1 class="title">ยืนยันรหัส OTP</h1>
     <p class="subtitle">
       กรอกรหัส 6 หลักที่เราส่งไปยัง<br>
@@ -350,7 +371,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     </div>
     
     <?php elseif ($step === 'reset' && isset($_SESSION['password_reset']['verified'])): ?>
-    <!-- STEP 3: Reset Password -->
     <h1 class="title">ตั้งรหัสผ่านใหม่</h1>
     <p class="subtitle">กรุณากรอกรหัสผ่านใหม่ของคุณ</p>
     
@@ -386,7 +406,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     </form>
     
     <?php else: ?>
-    <!-- Error State -->
     <div class="alert alert-error">
       <i class="fas fa-exclamation-triangle"></i>
       <span>เซสชันไม่ถูกต้อง กรุณาเริ่มต้นใหม่</span>
@@ -396,7 +415,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     </a>
     <?php endif; ?>
     
-    <!-- Back Link -->
     <div class="back-link">
       <a href="login.php">
         <i class="fas fa-arrow-left"></i> กลับไปหน้าเข้าสู่ระบบ
