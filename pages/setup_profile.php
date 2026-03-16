@@ -351,7 +351,7 @@ main {
           <?php endforeach; ?>
           <label class="dis-option">
             <input type="checkbox" id="checkOther" onchange="toggleOther()" <?= !empty($other_text)?'checked':'' ?>>
-            <span class="dis-pill" style="border-style:dashed;">✏️ อื่นๆ</span>
+            <span class="dis-pill" style="border-style:dashed;">อื่นๆ</span>
           </label>
         </div>
         <div id="otherBox" class="<?= !empty($other_text)?'':'hidden' ?>" style="margin-top:12px;">
