@@ -18,9 +18,7 @@ if (!str_ends_with($admin_data['email'], '@admin.com')) {
     exit();
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   HANDLE ACTIONS
-   ══════════════════════════════════════════════════════════════════ */
+/* HANDLE ACTIONS */
 $success_msg = '';
 $error_msg = '';
 
@@ -102,19 +100,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_msg = "เกิดข้อผิดพลาดในการลบผู้ใช้";
         }
     }
+    
+    // ----- 4. เปลี่ยนสถานะ User ↔ Admin -----
+    if ($action === 'toggle_role') {
+        $target_id = (int)$_POST['user_id'];
+        
+        // เช็คว่าเป็น admin หรือ user
+        $check_stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+        $check_stmt->bind_param("i", $target_id);
+        $check_stmt->execute();
+        $current_role = $check_stmt->get_result()->fetch_assoc()['role'];
+        
+        // Toggle: 0 → 1 หรือ 1 → 0
+        $new_role = ($current_role == 1) ? 0 : 1;
+        
+        $stmt = $conn->prepare("UPDATE users SET role = ? WHERE id = ?");
+        $stmt->bind_param("ii", $new_role, $target_id);
+        
+        if ($stmt->execute()) {
+            $role_text = ($new_role == 1) ? 'Admin' : 'User';
+            $success_msg = "เปลี่ยนสถานะเป็น $role_text เรียบร้อยแล้ว";
+        } else {
+            $error_msg = "เกิดข้อผิดพลาดในการเปลี่ยนสถานะ";
+        }
+    }
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   FETCH USERS
-   ══════════════════════════════════════════════════════════════════ */
+/* FETCH USERS */
+// แสดงทุกคน (รวม Admin)
 $users_sql = "
-    SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.created_at,
+    SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.role, u.created_at,
            hp.daily_calorie_target, hp.health_conditions,
            (SELECT COUNT(*) FROM meal_logs WHERE user_id = u.id) as meal_count
     FROM users u
     LEFT JOIN health_profiles hp ON u.id = hp.user_id
-    WHERE u.email NOT LIKE '%@admin.com'
-    ORDER BY u.created_at DESC
+    ORDER BY u.role DESC, u.created_at DESC
 ";
 $users = $conn->query($users_sql)->fetch_all(MYSQLI_ASSOC);
 $total = count($users);
@@ -235,6 +255,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
               <th>Username</th>
               <th>Email</th>
               <th>ชื่อ-สกุล</th>
+              <th>สถานะ</th>
               <th>โรคประจำตัว</th>
               <th>Target (kcal)</th>
               <th>Meals</th>
@@ -252,6 +273,17 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
               <td style="font-size:.8rem;color:var(--muted);"><?= htmlspecialchars($u['email']) ?></td>
               <td style="font-weight:500;"><?= htmlspecialchars($u['first_name'].' '.$u['last_name']) ?></td>
               <td>
+                <?php if ($u['role'] == 1): ?>
+                <span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;">
+                  <i class="fas fa-crown"></i> Admin
+                </span>
+                <?php else: ?>
+                <span class="badge" style="background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;">
+                  <i class="fas fa-user"></i> User
+                </span>
+                <?php endif; ?>
+              </td>
+              <td>
                 <?php if ($u['health_conditions']): ?>
                 <span class="badge badge-orange" title="<?= htmlspecialchars($u['health_conditions']) ?>">
                   <?= htmlspecialchars(mb_strimwidth($u['health_conditions'], 0, 25, '...', 'UTF-8')) ?>
@@ -265,11 +297,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
               <td data-order="<?= strtotime($u['created_at']) ?>" style="font-size:.8rem; color:var(--muted);">
                 <?= date('j M Y', strtotime($u['created_at'])) ?>
               </td>
-              <td style="text-align: right; min-width: 250px;">
-                <div style="display:inline-flex; gap:6px;">
+              <td style="text-align: right; min-width: 320px;">
+                <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
                   
                   <button type="button" onclick="openEditModal(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['first_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['last_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['daily_calorie_target'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($u['health_conditions'] ?? '', ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#f8faf9; color:var(--g700); border:1px solid var(--bdr);">
                     <i class="fas fa-user-edit"></i> แก้ไข
+                  </button>
+                  
+                  <button type="button" onclick="confirmToggleRole(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>', <?= $u['role'] ?>)" class="btn btn-sm" style="background:#f3e8ff; color:#7c3aed; border:1px solid #d8b4fe;">
+                    <i class="fas fa-user-shield"></i> <?= $u['role'] == 1 ? 'ลด→User' : 'ยก→Admin' ?>
                   </button>
 
                   <button type="button" onclick="confirmReset(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
@@ -423,6 +459,29 @@ function confirmReset(id, username) {
     }).then((result) => {
         if (result.isConfirmed) {
             document.getElementById('form_action').value = 'reset_password';
+            document.getElementById('form_user_id').value = id;
+            document.getElementById('actionForm').submit();
+        }
+    });
+}
+
+function confirmToggleRole(id, username, currentRole) {
+    const newRole = currentRole == 1 ? 'User' : 'Admin';
+    const newRoleColor = currentRole == 1 ? '#1e40af' : '#92400e';
+    const icon = currentRole == 1 ? 'fa-user' : 'fa-crown';
+    
+    Swal.fire({
+        title: 'เปลี่ยนสถานะผู้ใช้?',
+        html: `คุณต้องการเปลี่ยนสถานะของ <b>${username}</b><br>เป็น <span style="color:${newRoleColor};"><i class="fas ${icon}"></i> ${newRole}</span> ใช่หรือไม่?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#7c3aed',
+        cancelButtonColor: '#9ca3af',
+        confirmButtonText: `ใช่, เปลี่ยนเป็น ${newRole}!`,
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('form_action').value = 'toggle_role';
             document.getElementById('form_user_id').value = id;
             document.getElementById('actionForm').submit();
         }
