@@ -493,25 +493,35 @@ main {
 </div>
 
 <script>
-const userId = <?= $user_id ?>;
-const apiBase = 'http://127.0.0.1:8000';
-
+// ✅ Use toggle_favorite.php endpoint
 async function toggleFav(recipeId, btn) {
   try {
-    const res = await fetch(`${apiBase}/favorites/${userId}`, {
+    const res = await fetch('../api/toggle_favorite.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ recipe_id: recipeId })
     });
+    
     const data = await res.json();
     
     if (data.success) {
       btn.classList.toggle('active');
-      showToast(btn.classList.contains('active') ? '❤️ เพิ่มในรายการโปรดแล้ว' : '💔 ลบออกจากรายการโปรดแล้ว');
+      
+      // Show appropriate message
+      if (data.action === 'added') {
+        showToast('❤️ เพิ่มในรายการโปรดแล้ว');
+      } else {
+        showToast('💔 ลบออกจากรายการโปรดแล้ว');
+      }
+      
+      // Reload after 1 second to update counts
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showToast('⚠️ ' + (data.message || 'เกิดข้อผิดพลาด'), true);
     }
   } catch(e) {
     console.error('Favorite error:', e);
-    showToast('⚠️ เกิดข้อผิดพลาด', true);
+    showToast('⚠️ เกิดข้อผิดพลาด กรุณาลองใหม่', true);
   }
 }
 
