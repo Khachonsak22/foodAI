@@ -33,48 +33,47 @@ $data = json_decode($raw, true);
 
 if (!$data) {
     http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON body']);
+    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON']);
     exit;
 }
 
-// 4. ตรวจสอบความปลอดภัย (Secret Token)
-$incoming_secret = $data['secret'] ?? '';
+// 4. รับค่าต่างๆ (เพิ่มการรับค่า image_url และ image_prompt ที่หายไป)
+$secret       = $data['secret'] ?? '';
+$title        = $data['title'] ?? '';
+$content      = $data['content'] ?? '';
+$image_url_in = $data['image_url'] ?? ''; 
+$image_prompt = $data['image_prompt'] ?? ''; 
 
-// เช็คว่ารหัสที่ส่งมา ตรงกับที่เราตั้งไว้ใน connect.php หรือไม่
-if ($incoming_secret !== N8N_SECRET) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized: Secret token mismatch']);
+// 5. ตรวจสอบ Secret Token
+if ($secret !== N8N_SECRET) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Invalid secret token']);
     exit;
 }
 
-// 5. ตรวจสอบความครบถ้วนของข้อมูลข่าว
-$title        = trim($data['title'] ?? '');
-$content      = trim($data['content'] ?? '');
-$image_prompt = trim($data['image_prompt'] ?? ''); // รับคำค้นหาภาษาอังกฤษจาก n8n
-
-if (empty($title) || empty($content)) {
-    http_response_code(422);
-    echo json_encode(['status' => 'error', 'message' => 'Title and content are required']);
-    exit;
-}
-
-// 6. ทำความสะอาดข้อมูล (Sanitize) และสร้างลิงก์รูปภาพ AI
+// 6. ทำความสะอาดข้อมูล (Sanitize) และจัดการรูปภาพ
 $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
 
-// [ไม้ตายกันเหนียว] ถ้าระบบส่งคำสั่งวาดรูปมาให้ใช้ตามนั้น 
-// แต่ถ้าส่งมาเป็นค่าว่าง ให้เอา "หัวข้อข่าว" ไปให้ AI วาดแทน!
-if (!empty($image_prompt)) {
-    $prompt_text = $image_prompt;
+// ตรวจสอบว่า n8n ส่งลิงก์รูปภาพมาให้โดยตรงหรือไม่
+if (!empty($image_url_in)) {
+    // ถ้ามีลิงก์รูปจาก RSS Feed อยู่แล้ว ให้ใช้รูปนั้นเลย
+    $image_url = $image_url_in;
 } else {
-    // ใส่คำว่า healthy food นำหน้าหัวข้อข่าว เพื่อคุมโทนรูปให้อยู่ในหมวดอาหาร
-    $prompt_text = "healthy food menu for: " . $data['title']; 
+    // [ไม้ตายกันเหนียว] ถ้าระบบส่งคำสั่งวาดรูปมาให้ใช้ตามนั้น 
+    // แต่ถ้าส่งมาเป็นค่าว่าง ให้เอา "หัวข้อข่าว" ไปให้ AI วาดแทน!
+    if (!empty($image_prompt)) {
+        $prompt_text = $image_prompt;
+    } else {
+        // ใส่คำว่า healthy food นำหน้าหัวข้อข่าว เพื่อคุมโทนรูปให้อยู่ในหมวดอาหาร
+        $prompt_text = "healthy food menu for: " . $data['title']; 
+    }
+
+    // ล้างตัวอักษรขยะและการเคาะบรรทัดทิ้ง
+    $clean_prompt = trim(preg_replace('/\s+/', ' ', $prompt_text));
+
+    // สร้างลิงก์ Pollinations.ai แบบสมบูรณ์
+    $image_url = "https://image.pollinations.ai/prompt/" . urlencode($clean_prompt) . "?width=800&height=500&nologo=true";
 }
-
-// ล้างตัวอักษรขยะและการเคาะบรรทัดทิ้ง
-$clean_prompt = trim(preg_replace('/\s+/', ' ', $prompt_text));
-
-// สร้างลิงก์ Pollinations.ai แบบสมบูรณ์
-$image_url = "https://image.pollinations.ai/prompt/" . urlencode($clean_prompt) . "?width=800&height=500&nologo=true";
 
 // 7. ลบเฉพาะข่าวที่เก่ากว่า 7 วันทิ้ง
 $conn->query("DELETE FROM news WHERE created_at < (NOW() - INTERVAL 7 DAY)");
@@ -85,19 +84,9 @@ $stmt = $conn->prepare($insert_sql);
 $stmt->bind_param("sss", $title, $content, $image_url);
 
 if ($stmt->execute()) {
-    $new_id = $conn->insert_id;
-    http_response_code(201);
-    echo json_encode([
-        'status'  => 'success',
-        'message' => 'News saved successfully',
-        'id'      => $new_id,
-        'saved_at' => date('Y-m-d H:i:s'),
-    ]);
+    echo json_encode(['status' => 'success', 'message' => 'News saved successfully']);
 } else {
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $conn->error]);
+    echo json_encode(['status' => 'error', 'message' => 'Database error']);
 }
-
-$stmt->close();
-$conn->close();
 ?>
