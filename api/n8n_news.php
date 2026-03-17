@@ -36,18 +36,15 @@ if (empty($title) || empty($content)) {
 
 $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
 
-// ✅ แก้ไข: รับรูปภาพจาก N8N แทนการสุ่มเอง
-$image_url = trim($data['image_url'] ?? '');
+// ==============================================================
+// 🛠️ DEBUG MODE: บังคับใช้รูปภาพทดสอบที่เสถียรที่สุด 1,000,000%
+// ==============================================================
+$image_url = "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80";
 
-// ถ้าไม่มีรูปจาก N8N ให้ใช้ fallback
-if (empty($image_url)) {
-    $image_url = "https://loremflickr.com/800/500/healthy,food?random=" . rand(1, 999999);
-}
-
-// ลบข่าวเก่า (เก็บไว้ 7 วัน)
+// 7. ลบข่าวเก่า
 $conn->query("DELETE FROM news WHERE created_at < (NOW() - INTERVAL 7 DAY)");
 
-// บันทึกข้อมูล
+// 8. บันทึกข้อมูล
 $insert_sql = "INSERT INTO news (title, content, image_url, created_at) VALUES (?, ?, ?, NOW())";
 $stmt = $conn->prepare($insert_sql);
 $stmt->bind_param("sss", $title, $content, $image_url);
