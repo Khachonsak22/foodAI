@@ -33,42 +33,54 @@ $data = json_decode($raw, true);
 
 if (!$data) {
     http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON']);
+    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON body']);
     exit;
 }
 
-// 4. รับค่าต่างๆ (เพิ่มการรับค่า image_url และ image_prompt ที่หายไป)
-$secret       = $data['secret'] ?? '';
-$title        = $data['title'] ?? '';
-$content      = $data['content'] ?? '';
-$image_url_in = $data['image_url'] ?? ''; 
-$image_prompt = $data['image_prompt'] ?? ''; 
+// 4. ตรวจสอบความปลอดภัย (Secret Token)
+$incoming_secret = $data['secret'] ?? '';
 
-// 5. ตรวจสอบ Secret Token
-if ($secret !== N8N_SECRET) {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid secret token']);
+// เช็คว่ารหัสที่ส่งมา ตรงกับที่เราตั้งไว้ใน connect.php หรือไม่
+if ($incoming_secret !== N8N_SECRET) {
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Unauthorized: Secret token mismatch']);
     exit;
 }
 
-// 6. ทำความสะอาดข้อมูล (Sanitize) และจัดการรูปภาพ
+// 5. ตรวจสอบความครบถ้วนของข้อมูลข่าว
+$title        = trim($data['title'] ?? '');
+$content      = trim($data['content'] ?? '');
+$image_prompt = trim($data['image_prompt'] ?? ''); // รับคำค้นหาภาษาอังกฤษจาก n8n
+
+if (empty($title) || empty($content)) {
+    http_response_code(422);
+    echo json_encode(['status' => 'error', 'message' => 'Title and content are required']);
+    exit;
+}
+
+// 6. ทำความสะอาดข้อมูล (Sanitize) และสร้างลิงก์รูปภาพ AI
 $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
 
-// ✅ เช็คว่า n8n ส่งรูปจริงมาไหม ถ้ามีให้ใช้รูปจริงเลย!
-if (!empty($image_url_in)) {
-    // บังคับเปลี่ยน http:// เป็น https:// อัตโนมัติ เพื่อแก้ปัญหา Mixed Content (เบราว์เซอร์บล็อกรูป)
-    $image_url = str_replace('http://', 'https://', $image_url_in);
-} else {
-    // ถ้าไม่มีรูป ค่อยให้ AI (Pollinations) วาดให้
-    if (!empty($image_prompt)) {
-        $prompt_text = $image_prompt;
-    } else {
-        $prompt_text = "healthy food menu for: " . $data['title']; 
-    }
+if (!empty($image_prompt)) {
+    // 1. อนุญาตเฉพาะ "ตัวอักษรภาษาอังกฤษ ตัวเลข และช่องว่าง" เท่านั้น (ตัดภาษาไทยและเครื่องหมายทิ้ง)
+    $clean_prompt = preg_replace('/[^a-zA-Z0-9\s]/', '', $image_prompt);
     
-    // ล้างตัวอักษรขยะและการเคาะบรรทัดทิ้ง
-    $clean_prompt = trim(preg_replace('/\s+/', ' ', $prompt_text));
-    $image_url = "https://image.pollinations.ai/prompt/" . urlencode($clean_prompt) . "?width=800&height=500&nologo=true";
+    // 2. ตัดช่องว่างที่ซ้ำซ้อนทิ้ง
+    $clean_prompt = trim(preg_replace('/\s+/', ' ', $clean_prompt));
+    
+    // 3. บังคับตัดความยาวให้เหลือแค่ 80 ตัวอักษร (ป้องกันลิงก์ยาวเกิน 255 จนล้นฐานข้อมูล)
+    $clean_prompt = substr($clean_prompt, 0, 80);
+    
+    // 4. ถ้ายาวเกิน 0 ตัวอักษร (มีคำภาษาอังกฤษอยู่) ค่อยสร้างลิงก์
+    if (strlen($clean_prompt) > 0) {
+        $image_url = "https://image.pollinations.ai/prompt/" . rawurlencode($clean_prompt) . "?width=800&height=500&nologo=true";
+    } else {
+        // ถ้า AI ส่งมาแต่ภาษาไทยจนโดนตัดทิ้งหมด ให้ใช้รูปสำรอง (รูปอาหารแบบสุ่ม)
+        $image_url = "https://loremflickr.com/800/500/healthy,food?random=" . rand(1, 1000);
+    }
+} else {
+    // ถ้า n8n ไม่ได้ส่งอะไรมาเลย ให้ใช้รูปสำรอง
+    $image_url = "https://loremflickr.com/800/500/healthy,food?random=" . rand(1, 1000);
 }
 
 // 7. ลบเฉพาะข่าวที่เก่ากว่า 7 วันทิ้ง
@@ -80,9 +92,19 @@ $stmt = $conn->prepare($insert_sql);
 $stmt->bind_param("sss", $title, $content, $image_url);
 
 if ($stmt->execute()) {
-    echo json_encode(['status' => 'success', 'message' => 'News saved successfully']);
+    $new_id = $conn->insert_id;
+    http_response_code(201);
+    echo json_encode([
+        'status'  => 'success',
+        'message' => 'News saved successfully',
+        'id'      => $new_id,
+        'saved_at' => date('Y-m-d H:i:s'),
+    ]);
 } else {
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Database error']);
+    echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $conn->error]);
 }
+
+$stmt->close();
+$conn->close();
 ?>
