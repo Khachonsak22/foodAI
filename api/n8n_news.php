@@ -61,16 +61,20 @@ if (empty($title) || empty($content)) {
 // 6. ทำความสะอาดข้อมูล (Sanitize) และสร้างลิงก์รูปภาพ AI
 $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
 
-// ถ้า n8n ส่งคำภาษาอังกฤษมา ให้ PHP สร้างลิงก์ Pollinations.ai อัตโนมัติเลย
+// [ไม้ตายกันเหนียว] ถ้าระบบส่งคำสั่งวาดรูปมาให้ใช้ตามนั้น 
+// แต่ถ้าส่งมาเป็นค่าว่าง ให้เอา "หัวข้อข่าว" ไปให้ AI วาดแทน!
 if (!empty($image_prompt)) {
-    // ใช้ preg_replace ตัดเคาะบรรทัด (Enter) หรือช่องว่างแปลกๆ ที่ AI แถมมาออกให้หมด
-    $clean_prompt = trim(preg_replace('/\s+/', ' ', $image_prompt));
-    // urlencode() จะช่วยแปลงช่องว่างให้เป็นโค้ดที่ URL อ่านได้
-    $image_url = "https://image.pollinations.ai/prompt/" . urlencode($clean_prompt) . "?width=800&height=500&nologo=true";
+    $prompt_text = $image_prompt;
 } else {
-    // แต่ถ้าไม่มี ก็ให้บันทึกเป็นค่าว่างไป
-    $image_url = '';
+    // ใส่คำว่า healthy food นำหน้าหัวข้อข่าว เพื่อคุมโทนรูปให้อยู่ในหมวดอาหาร
+    $prompt_text = "healthy food menu for: " . $data['title']; 
 }
+
+// ล้างตัวอักษรขยะและการเคาะบรรทัดทิ้ง
+$clean_prompt = trim(preg_replace('/\s+/', ' ', $prompt_text));
+
+// สร้างลิงก์ Pollinations.ai แบบสมบูรณ์
+$image_url = "https://image.pollinations.ai/prompt/" . urlencode($clean_prompt) . "?width=800&height=500&nologo=true";
 
 // 7. ลบเฉพาะข่าวที่เก่ากว่า 7 วันทิ้ง
 $conn->query("DELETE FROM news WHERE created_at < (NOW() - INTERVAL 7 DAY)");
