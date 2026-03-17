@@ -63,8 +63,10 @@ $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
 
 // ถ้า n8n ส่งคำภาษาอังกฤษมา ให้ PHP สร้างลิงก์ Pollinations.ai อัตโนมัติเลย
 if (!empty($image_prompt)) {
+    // ใช้ preg_replace ตัดเคาะบรรทัด (Enter) หรือช่องว่างแปลกๆ ที่ AI แถมมาออกให้หมด
+    $clean_prompt = trim(preg_replace('/\s+/', ' ', $image_prompt));
     // urlencode() จะช่วยแปลงช่องว่างให้เป็นโค้ดที่ URL อ่านได้
-    $image_url = "https://image.pollinations.ai/prompt/" . urlencode($image_prompt) . "?width=800&height=500&nologo=true";
+    $image_url = "https://image.pollinations.ai/prompt/" . urlencode($clean_prompt) . "?width=800&height=500&nologo=true";
 } else {
     // แต่ถ้าไม่มี ก็ให้บันทึกเป็นค่าว่างไป
     $image_url = '';
