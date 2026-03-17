@@ -39,7 +39,7 @@ $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
 // ==============================================================
 // 🛠️ DEBUG MODE: บังคับใช้รูปภาพทดสอบที่เสถียรที่สุด 1,000,000%
 // ==============================================================
-$image_url = "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80";
+$image_url = "https://loremflickr.com/800/500/healthy,food?lock=" . rand(1, 999999);
 
 // 7. ลบข่าวเก่า
 $conn->query("DELETE FROM news WHERE created_at < (NOW() - INTERVAL 7 DAY)");
