@@ -36,14 +36,18 @@ if (empty($title) || empty($content)) {
 
 $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
 
-//  แก้ไข: สุ่มรูปภาพอาหารสุขภาพแบบไม่ซ้ำกัน
-// ใช้ rand() สุ่มตัวเลข 1 ถึง 999,999 ต่อท้าย เพื่อป้องกันไม่ให้จำแคชรูปเก่า
-$image_url = "https://loremflickr.com/800/500/healthy,food?random=" . rand(1, 999999);
+// ✅ แก้ไข: รับรูปภาพจาก N8N แทนการสุ่มเอง
+$image_url = trim($data['image_url'] ?? '');
 
-// 7. ลบข่าวเก่า
+// ถ้าไม่มีรูปจาก N8N ให้ใช้ fallback
+if (empty($image_url)) {
+    $image_url = "https://loremflickr.com/800/500/healthy,food?random=" . rand(1, 999999);
+}
+
+// ลบข่าวเก่า (เก็บไว้ 7 วัน)
 $conn->query("DELETE FROM news WHERE created_at < (NOW() - INTERVAL 7 DAY)");
 
-// 8. บันทึกข้อมูล
+// บันทึกข้อมูล
 $insert_sql = "INSERT INTO news (title, content, image_url, created_at) VALUES (?, ?, ?, NOW())";
 $stmt = $conn->prepare($insert_sql);
 $stmt->bind_param("sss", $title, $content, $image_url);
