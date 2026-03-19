@@ -449,7 +449,6 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
     <div class="nav-links">
       <a href="#features" class="nav-link">ฟีเจอร์</a>
       <a href="#gallery" class="nav-link">แกลเลอรี่</a>
-      <a href="#about" class="nav-link">เกี่ยวกับ</a>
       <a href="pages/login.php" class="btn-nav">
         <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
       </a>
