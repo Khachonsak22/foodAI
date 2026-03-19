@@ -237,13 +237,12 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
     if ($userId > 0) {
         $menusToSave = $parsedData['recommended_menus'] ?? [];
         
-        // 1. บันทึกเมนูลง Database อัตโนมัติ
         if (!empty($menusToSave)) {
             $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
             
-            // แก้ไขชื่อคอลัมน์ให้ตรงกับตาราง recipes 100% (calories, image)
+            // 🌟 แก้ไขคำสั่งเพิ่มคอลัมน์ ingredients แยกออกมาอย่างชัดเจน
             $check_recipe = $conn->prepare("SELECT id FROM recipes WHERE title = ?");
-            $ins_recipe = $conn->prepare("INSERT INTO recipes (title, description, instructions, calories, image) VALUES (?, ?, ?, ?, ?)");
+            $ins_recipe = $conn->prepare("INSERT INTO recipes (title, description, ingredients, instructions, calories, image) VALUES (?, ?, ?, ?, ?, ?)");
 
             foreach ($menusToSave as $m) {
                 $mName = $m['name'] ?? 'เมนูอาหาร';
@@ -258,21 +257,20 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
                     $ins_menu_stmt->execute();
                 }
                 
-                // ระบบเพิ่มคลังอาหารหลัก (ค้นหาเจอแน่นอน 100%)
+                // บันทึกลงคลังอาหารหลัก
                 if ($check_recipe) {
                     $check_recipe->bind_param("s", $mName);
                     $check_recipe->execute();
                     $res = $check_recipe->get_result();
                     
-                    // ถ้ายังไม่มีเมนูนี้ในคลัง ให้บันทึกเพิ่มลงไป
                     if ($res && $res->num_rows === 0) {
-                        // รวมวัตถุดิบกับคำอธิบายเข้าด้วยกัน
-                        $fullDesc = "วัตถุดิบที่ต้องใช้:\n" . $mIng . "\n\nคำอธิบาย:\n" . $mDesc;
-                        // สุ่มรูปล็อกไว้
+                        // สุ่มรูปภาพให้เมนูใหม่
                         $randomImg = "https://loremflickr.com/800/500/healthy,food?lock=" . rand(1, 999999);
                         
                         if ($ins_recipe) {
-                            $ins_recipe->bind_param("sssis", $mName, $fullDesc, $mInst, $mCal, $randomImg);
+                            // 🌟 บันทึกแยกช่องกัน 100% ($mDesc ลงช่อง description, $mIng ลงช่อง ingredients)
+                            // ssssis = String 4 ตัว, Int 1 ตัว, String 1 ตัว
+                            $ins_recipe->bind_param("ssssis", $mName, $mDesc, $mIng, $mInst, $mCal, $randomImg);
                             $ins_recipe->execute();
                         }
                     }
@@ -280,7 +278,7 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
             }
         }
         
-        // 2. บันทึกประวัติแชทลง chat_logs
+        // บันทึกประวัติแชทลง chat_logs
         $finalMessageToSave = $parsedData['chat_response'];
         if (!empty($menusToSave)) {
             $finalMessageToSave .= '|||MENUS|||' . json_encode($menusToSave, JSON_UNESCAPED_UNICODE);

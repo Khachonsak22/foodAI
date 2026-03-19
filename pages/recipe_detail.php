@@ -45,7 +45,7 @@ $stmt_tags->bind_param("i", $recipe_id);
 $stmt_tags->execute();
 $recipe_tags = $stmt_tags->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// ── ดึงวัตถุดิบ ──
+// ── ดึงวัตถุดิบ (จากตารางของแอดมิน) ──
 $stmt_ing = $conn->prepare("SELECT i.name, ri.amount, ri.unit FROM recipe_ingredients ri JOIN ingredients i ON ri.ingredient_id = i.id WHERE ri.recipe_id = ?");
 $stmt_ing->bind_param("i", $recipe_id);
 $stmt_ing->execute();
@@ -200,6 +200,12 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
               <span style="color:var(--g600);font-weight:600;"><?= htmlspecialchars($ing['amount']) ?> <?= htmlspecialchars($ing['unit']) ?></span>
             </div>
             <?php endwhile; ?>
+            
+          <?php elseif (!empty($recipe['ingredients'])): ?>
+            <div style="background:var(--g50);border-radius:10px;padding:16px;font-size:.85rem;line-height:1.8;color:var(--sub);">
+                <?= nl2br(htmlspecialchars($recipe['ingredients'])) ?>
+            </div>
+            
           <?php else: ?>
             <p style="color:var(--muted);font-size:.82rem;">ไม่มีข้อมูลวัตถุดิบ</p>
           <?php endif; ?>
