@@ -9,7 +9,7 @@ $conn = mysqli_connect($servername, $username, $password, $dbname);
 mysqli_query($conn,"SET NAMES utf8");
 
 // ประกาศตัวแปรค่าคงที่สำหรับ Gemini API Key
-define('GEMINI_API_KEY', '');
+define('GEMINI_API_KEY', 'AIzaSyD9-ePZHHihvwGOma2VnpR4fzad3GTZfBA');
 define('N8N_SECRET', 'f8a3c9b2-1e4d-4a7f-9c2b-8d6e5a4f3b1c');
 
 ?>
