@@ -214,9 +214,18 @@ $responseData = json_decode($response, true);
 if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     $rawText = $responseData['candidates'][0]['content']['parts'][0]['text'];
     
-    // Clean JSON string
+    // Clean JSON string (ดักจับ JSON ให้แม่นยำขึ้น ป้องกัน AI พิมพ์เกิน)
     $cleanJson = str_replace(['```json', '```'], '', $rawText);
+    $cleanJson = trim($cleanJson);
+    
+    // ถ้า json_decode ไม่ผ่าน ให้ลองใช้ Regex ดึงเฉพาะปีกกา { ... } ออกมา
     $parsedData = json_decode($cleanJson, true);
+    if (!$parsedData) {
+        preg_match('/\{.*\}/s', $cleanJson, $matches);
+        if (!empty($matches)) {
+             $parsedData = json_decode($matches[0], true);
+        }
+    }
 
     if (!$parsedData) {
         $parsedData = [
@@ -228,27 +237,60 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
     if ($userId > 0) {
         $menusToSave = $parsedData['recommended_menus'] ?? [];
         
-        // 1. บันทึกเมนูลงตาราง ai_saved_menus อัตโนมัติ (เพื่อให้ไปโผล่ในหน้า meal_log ทันที)
+        // 1. บันทึกเมนูลง Database อัตโนมัติ
         if (!empty($menusToSave)) {
             $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
+            
+            // แก้ไขชื่อคอลัมน์ให้ตรงกับตาราง recipes 100% (calories, image)
+            $check_recipe = $conn->prepare("SELECT id FROM recipes WHERE title = ?");
+            $ins_recipe = $conn->prepare("INSERT INTO recipes (title, description, instructions, calories, image) VALUES (?, ?, ?, ?, ?)");
+
             foreach ($menusToSave as $m) {
                 $mName = $m['name'] ?? 'เมนูอาหาร';
                 $mCal = (int)($m['calories'] ?? 0);
                 $mDesc = $m['desc'] ?? '';
-                $ins_menu_stmt->bind_param("isis", $userId, $mName, $mCal, $mDesc);
-                $ins_menu_stmt->execute();
+                $mIng = $m['ingredients'] ?? '';
+                $mInst = $m['instructions'] ?? '';
+                
+                // บันทึกลงตารางประวัติการแนะนำของ AI
+                if ($ins_menu_stmt) {
+                    $ins_menu_stmt->bind_param("isis", $userId, $mName, $mCal, $mDesc);
+                    $ins_menu_stmt->execute();
+                }
+                
+                // ระบบเพิ่มคลังอาหารหลัก (ค้นหาเจอแน่นอน 100%)
+                if ($check_recipe) {
+                    $check_recipe->bind_param("s", $mName);
+                    $check_recipe->execute();
+                    $res = $check_recipe->get_result();
+                    
+                    // ถ้ายังไม่มีเมนูนี้ในคลัง ให้บันทึกเพิ่มลงไป
+                    if ($res && $res->num_rows === 0) {
+                        // รวมวัตถุดิบกับคำอธิบายเข้าด้วยกัน
+                        $fullDesc = "วัตถุดิบที่ต้องใช้:\n" . $mIng . "\n\nคำอธิบาย:\n" . $mDesc;
+                        // สุ่มรูปล็อกไว้
+                        $randomImg = "https://loremflickr.com/800/500/healthy,food?lock=" . rand(1, 999999);
+                        
+                        if ($ins_recipe) {
+                            $ins_recipe->bind_param("sssis", $mName, $fullDesc, $mInst, $mCal, $randomImg);
+                            $ins_recipe->execute();
+                        }
+                    }
+                }
             }
         }
         
-        // 2. บันทึกประวัติแชทลง chat_logs โดยใช้ |||MENUS||| เป็นตัวแบ่ง เพื่อให้หน้าเว็บดึงไปสร้างปุ่มได้
+        // 2. บันทึกประวัติแชทลง chat_logs
         $finalMessageToSave = $parsedData['chat_response'];
         if (!empty($menusToSave)) {
             $finalMessageToSave .= '|||MENUS|||' . json_encode($menusToSave, JSON_UNESCAPED_UNICODE);
         }
         
         $log_stmt = $conn->prepare("INSERT INTO chat_logs (user_id, sender, message) VALUES (?, 'ai', ?)");
-        $log_stmt->bind_param("is", $userId, $finalMessageToSave);
-        $log_stmt->execute();
+        if ($log_stmt) {
+            $log_stmt->bind_param("is", $userId, $finalMessageToSave);
+            $log_stmt->execute();
+        }
     }
 
     echo json_encode($parsedData);
