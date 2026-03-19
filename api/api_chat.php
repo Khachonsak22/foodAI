@@ -214,18 +214,9 @@ $responseData = json_decode($response, true);
 if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     $rawText = $responseData['candidates'][0]['content']['parts'][0]['text'];
     
-    // Clean JSON string (ดักจับ JSON ให้แม่นยำขึ้น ป้องกัน AI พิมพ์เกิน)
+    // Clean JSON string
     $cleanJson = str_replace(['```json', '```'], '', $rawText);
-    $cleanJson = trim($cleanJson);
-    
-    // ถ้า json_decode ไม่ผ่าน ให้ลองใช้ Regex ดึงเฉพาะปีกกา { ... } ออกมา
     $parsedData = json_decode($cleanJson, true);
-    if (!$parsedData) {
-        preg_match('/\{.*\}/s', $cleanJson, $matches);
-        if (!empty($matches)) {
-             $parsedData = json_decode($matches[0], true);
-        }
-    }
 
     if (!$parsedData) {
         $parsedData = [
@@ -237,41 +228,15 @@ if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts']
     if ($userId > 0) {
         $menusToSave = $parsedData['recommended_menus'] ?? [];
         
-        // 1. บันทึกเมนูลง Database อัตโนมัติ
+        // 1. บันทึกเมนูลงตาราง ai_saved_menus อัตโนมัติ (เพื่อให้ไปโผล่ในหน้า meal_log ทันที)
         if (!empty($menusToSave)) {
-            // Statement สำหรับบันทึกลงประวัติส่วนตัว
             $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
-            
-            // Statement สำหรับเช็กและบันทึกลงคลังอาหารหลัก (recipes) เพื่อให้ค้นหาเจอ
-            $check_recipe = $conn->prepare("SELECT id FROM recipes WHERE title = ?");
-            $ins_recipe = $conn->prepare("INSERT INTO recipes (title, description, instructions, total_calories, image_url) VALUES (?, ?, ?, ?, ?)");
-
             foreach ($menusToSave as $m) {
                 $mName = $m['name'] ?? 'เมนูอาหาร';
                 $mCal = (int)($m['calories'] ?? 0);
                 $mDesc = $m['desc'] ?? '';
-                $mIng = $m['ingredients'] ?? '';
-                $mInst = $m['instructions'] ?? '';
-                
-                // บันทึกลง ai_saved_menus (โค้ดเดิมของคุณ)
                 $ins_menu_stmt->bind_param("isis", $userId, $mName, $mCal, $mDesc);
                 $ins_menu_stmt->execute();
-                
-                // 🌟 เพิ่มใหม่: บันทึกลง recipes (คลังอาหารหลักของระบบ) 
-                $check_recipe->bind_param("s", $mName);
-                $check_recipe->execute();
-                
-                // ถ้าเมนูนี้ยังไม่มีในระบบ ให้เพิ่มเข้าไปใหม่เลย
-                if ($check_recipe->get_result()->num_rows === 0) {
-                    // นำวัตถุดิบและคำอธิบายมารวมกันไว้ในช่อง description
-                    $fullDesc = "วัตถุดิบที่ต้องใช้:\n" . $mIng . "\n\nคำอธิบาย:\n" . $mDesc;
-                    
-                    // สุ่มรูปภาพให้เมนูใหม่ (ล็อกภาพไว้ไม่ให้เปลี่ยนไปมา)
-                    $randomImg = "https://loremflickr.com/800/500/healthy,food?lock=" . rand(1, 999999);
-                    
-                    $ins_recipe->bind_param("sssis", $mName, $fullDesc, $mInst, $mCal, $randomImg);
-                    $ins_recipe->execute();
-                }
             }
         }
         
