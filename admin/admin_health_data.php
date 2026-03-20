@@ -7,6 +7,7 @@ if (!isset($_SESSION['user_id'])) {
     exit(); 
 }
 
+$user_id = $_SESSION['user_id'];
 $admin_stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
 $admin_stmt->bind_param("i", $user_id);
 $admin_stmt->execute();
