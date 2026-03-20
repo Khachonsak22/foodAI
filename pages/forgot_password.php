@@ -72,13 +72,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <p style='color: #dcfce7; margin: 10px 0 0 0;'>Password Reset Request</p>
                     </div>
                     <div class='content'>
-                        <h2 style='color: #1a2e1a; margin-bottom: 10px;'>สวัสดีคุณ {$user_name} 👋</h2>
+                        <h2 style='color: #1a2e1a; margin-bottom: 10px;'>สวัสดีคุณ {$user_name} </h2>
                         <p style='color: #4b6b4e; line-height: 1.6;'>เราได้รับคำขอรีเซ็ตรหัสผ่านของคุณ กรุณาใช้รหัส OTP ด้านล่างเพื่อดำเนินการต่อ</p>
                         
                         <div class='otp-box'>
                             <p style='margin: 0; color: #4b6b4e; font-size: 14px;'>รหัส OTP ของคุณ</p>
                             <div class='otp-code'>{$otp}</div>
-                            <p style='margin: 10px 0 0 0; color: #8da98f; font-size: 13px;'>⏱️ รหัสนี้จะหมดอายุใน 10 นาที</p>
+                            <p style='margin: 10px 0 0 0; color: #8da98f; font-size: 13px;'>⏱รหัสนี้จะหมดอายุใน 10 นาที</p>
                         </div>
                         
                         <div class='warning'>
@@ -307,7 +307,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 <div class="container">
   <div class="card">
     <div class="logo-wrapper">
-      <div class="logo">🔐</div>
+      <div class="logo"></div>
     </div>
     
     <?php if ($success_msg): ?>
