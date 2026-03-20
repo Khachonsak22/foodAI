@@ -3,17 +3,17 @@
 // ตรวจสอบชื่อหน้าปัจจุบันเพื่อทำสถานะ Active
 $current_page = basename($_SERVER['PHP_SELF']);
 
-// --- จุดที่แก้ไข 1: ดึงข้อมูลชื่อผู้ใช้จากฐานข้อมูลเพื่อแก้ปัญหาชื่อหาย ---
+// ✅ ดึงข้อมูลจาก database
 if (isset($_SESSION['user_id']) && isset($conn)) {
-    $user_sql = "SELECT first_name, last_name, email FROM users WHERE id = ?";
+    $user_sql = "SELECT username, email, profile_image FROM users WHERE id = ?";
     $user_stmt = $conn->prepare($user_sql);
     $user_stmt->bind_param("i", $_SESSION['user_id']);
     $user_stmt->execute();
     $user_res = $user_stmt->get_result()->fetch_assoc();
     
     if ($user_res) {
-        $firstName = !empty($user_res['first_name']) ? $user_res['first_name'] : "User";
-        $lastName  = $user_res['last_name'] ?? "";
+        $username = !empty($user_res['username']) ? $user_res['username'] : "User";
+        $profile_image = $user_res['profile_image'] ?? '';
         
         $is_admin = false;
         if (str_ends_with($user_res['email'], '@admin.com')) {
@@ -23,9 +23,9 @@ if (isset($_SESSION['user_id']) && isset($conn)) {
 }
 
 // ดึงตัวแปรสำหรับการแสดงผล (ในกรณีที่หาข้อมูลไม่พบ)
-$firstName = $firstName ?? "User";
-$lastName  = $lastName ?? "";
-$initials  = mb_strtoupper(mb_substr($firstName, 0, 1)) . mb_strtoupper(mb_substr($lastName, 0, 1));
+$username = $username ?? "User";
+$profile_image = $profile_image ?? '';
+$initials = mb_strtoupper(mb_substr($username, 0, 2));
 $menu_count = $menu_count ?? 0;
 ?>
 
@@ -122,6 +122,8 @@ $menu_count = $menu_count ?? 0;
   border-top: 1px solid var(--sb-bdr);
   padding: 16px; display: flex; align-items: center; gap: 11px; background: var(--g50);
 }
+
+/* ✅ Avatar รองรับทั้งรูปภาพและ initials */
 .sb-avatar {
   width: 38px; height: 38px; border-radius: 50%;
   background: linear-gradient(135deg, var(--g400), var(--t400));
@@ -129,17 +131,26 @@ $menu_count = $menu_count ?? 0;
   font-size: .82rem; font-weight: 800; color: white;
   flex-shrink: 0; font-family: 'Nunito', sans-serif;
   box-shadow: 0 2px 8px rgba(34,197,94,0.3);
+  overflow: hidden;
+  position: relative;
+}
+.sb-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0; left: 0;
 }
 
-/* --- จุดที่แก้ไข 2: ล็อกขนาดฟอนต์ของชื่อผู้ใช้ --- */
+/* ✅ แสดง username */
 .sb-user-name { 
   font-family: 'Kanit', sans-serif !important; 
-  font-size: .78rem !important; 
+  font-size: .8rem !important; 
   font-weight: 600 !important; 
   color: var(--txt); 
   white-space: nowrap; 
   overflow: hidden; 
-  text-overflow: ellipsis; 
+  text-overflow: ellipsis;
+  max-width: 120px;
 }
 
 .sb-logout { margin-left: auto; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--bdr); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .72rem; text-decoration: none; transition: all .18s; }
@@ -239,10 +250,19 @@ $menu_count = $menu_count ?? 0;
   </nav>
 
   <div class="sb-user">
-    <div class="sb-avatar"><?php echo htmlspecialchars($initials ?: 'U'); ?></div>
+    <!-- ✅ Avatar รองรับรูปภาพ -->
+    <div class="sb-avatar">
+      <?php if ($profile_image && file_exists("../public/uploads/avatars/" . $profile_image)): ?>
+        <img src="../public/uploads/avatars/<?= htmlspecialchars($profile_image) ?>?t=<?= time() ?>" alt="<?= htmlspecialchars($username) ?>">
+      <?php else: ?>
+        <?= htmlspecialchars($initials ?: 'U') ?>
+      <?php endif; ?>
+    </div>
+    
     <div style="min-width:0;">
-      <div class="sb-user-name">
-        <?php echo htmlspecialchars($firstName . ' ' . $lastName); ?>
+      <!-- ✅ แสดง username -->
+      <div class="sb-user-name" title="<?= htmlspecialchars($username) ?>">
+        <?= htmlspecialchars($username) ?>
       </div>
       <div style="color:var(--g600);font-size:.62rem;font-weight:500;margin-top:1px;">
         <i class="fas fa-circle" style="font-size:.4rem;color:var(--g400);vertical-align:middle;margin-right:3px;"></i>
@@ -269,9 +289,7 @@ document.addEventListener('click', (e) => {
   const sidebar = document.querySelector('.sidebar');
   const btn = document.querySelector('.menu-toggle');
   
-  // ตรวจสอบว่าเป็นหน้าจอมือถือ และองค์ประกอบทั้งสองมีอยู่จริง
   if (window.innerWidth <= 1024 && sidebar && btn) {
-    // ถ้าจุดที่คลิก ไม่ใช่ Sidebar และ ไม่ใช่ปุ่ม Hamburger ให้ปิด Sidebar
     if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
       sidebar.classList.remove('show');
     }
@@ -282,25 +300,24 @@ document.addEventListener('click', (e) => {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 function confirmLogout(event, url) {
-  event.preventDefault(); // หยุดการเปลี่ยนหน้าทันที
+  event.preventDefault();
   
   Swal.fire({
     title: 'ออกจากระบบ',
     text: "คุณต้องการออกจากระบบใช่หรือไม่?",
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#dc2626', // สีแดงปุ่มยืนยัน
-    cancelButtonColor: '#9ca3af', // สีเทาปุ่มยกเลิก
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#9ca3af',
     confirmButtonText: 'ออกจากระบบ',
     cancelButtonText: 'ยกเลิก'
   }).then((result) => {
     if (result.isConfirmed) {
-      window.location.href = url; // ไปที่หน้า logout เมื่อกดตกลง
+      window.location.href = url;
     }
   });
 }
 </script>
 <style>
-  /* บังคับให้ Alert ใช้ฟอนต์ Kanit เพื่อให้เข้ากับเว็บของคุณ */
   .swal2-container { font-family: 'Kanit', sans-serif !important; }
 </style>
