@@ -7,14 +7,14 @@ if (!isset($_SESSION['user_id'])) {
     exit(); 
 }
 
-$admin_stmt = $conn->prepare("SELECT email, first_name FROM users WHERE id = ?");
-$admin_stmt->bind_param("i", $_SESSION['user_id']);
+$admin_stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+$admin_stmt->bind_param("i", $user_id);
 $admin_stmt->execute();
 $admin_data = $admin_stmt->get_result()->fetch_assoc();
 
-if (!str_ends_with($admin_data['email'], '@admin.com')) { 
-    header("Location: ../pages/dashboard.php"); 
-    exit(); 
+if ($admin_data['role'] != 1) {
+    header("Location: ../pages/dashboard.php");
+    exit();
 }
 
 $success_msg = '';

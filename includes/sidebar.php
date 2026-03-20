@@ -5,7 +5,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 // ✅ ดึงข้อมูลจาก database
 if (isset($_SESSION['user_id']) && isset($conn)) {
-    $user_sql = "SELECT username, email, profile_image FROM users WHERE id = ?";
+    // 🌟 แก้ไข: ดึงคอลัมน์ role ออกมาตรวจสอบแทน email
+    $user_sql = "SELECT username, role, profile_image FROM users WHERE id = ?";
     $user_stmt = $conn->prepare($user_sql);
     $user_stmt->bind_param("i", $_SESSION['user_id']);
     $user_stmt->execute();
@@ -16,7 +17,8 @@ if (isset($_SESSION['user_id']) && isset($conn)) {
         $profile_image = $user_res['profile_image'] ?? '';
         
         $is_admin = false;
-        if (str_ends_with($user_res['email'], '@admin.com')) {
+        // 🌟 แก้ไข: เช็กจากคอลัมน์ role ถ้ามีค่าเป็น 1 แปลว่าเป็นแอดมิน (แสดงปุ่ม Admin Panel)
+        if ($user_res['role'] == 1) { 
             $is_admin = true;
         }
     }
@@ -250,7 +252,6 @@ $menu_count = $menu_count ?? 0;
   </nav>
 
   <div class="sb-user">
-    <!-- ✅ Avatar รองรับรูปภาพ -->
     <div class="sb-avatar">
       <?php if ($profile_image && file_exists("../public/uploads/avatars/" . $profile_image)): ?>
         <img src="../public/uploads/avatars/<?= htmlspecialchars($profile_image) ?>?t=<?= time() ?>" alt="<?= htmlspecialchars($username) ?>">
@@ -260,7 +261,6 @@ $menu_count = $menu_count ?? 0;
     </div>
     
     <div style="min-width:0;">
-      <!-- ✅ แสดง username -->
       <div class="sb-user-name" title="<?= htmlspecialchars($username) ?>">
         <?= htmlspecialchars($username) ?>
       </div>

@@ -11,13 +11,12 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // Get admin info
-$admin_stmt = $conn->prepare("SELECT email, first_name, last_name FROM users WHERE id = ?");
+$admin_stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
 $admin_stmt->bind_param("i", $user_id);
 $admin_stmt->execute();
 $admin_data = $admin_stmt->get_result()->fetch_assoc();
 
-// Verify @admin.com domain
-if (!str_ends_with($admin_data['email'], '@admin.com')) {
+if ($admin_data['role'] != 1) {
     header("Location: ../pages/dashboard.php");
     exit();
 }
