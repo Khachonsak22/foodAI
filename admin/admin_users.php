@@ -186,45 +186,49 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   main { padding: 1.5rem 1rem !important; }
 }
 
-/* ปรับปรุงดีไซน์ตาราง */
-.card { background:#fff; border:none; border-radius:24px; padding:28px; box-shadow:0 10px 30px rgba(0,0,0,.03); margin-bottom: 2rem;}
+/* ปรับปรุงดีไซน์ตารางให้อ่านง่าย สมดุล */
+.card { background:#fff; border:1px solid rgba(0,0,0,.04); border-radius:24px; padding:32px; box-shadow:0 12px 36px rgba(0,0,0,.03); margin-bottom: 2rem;}
 .table { width:100%; border-collapse: separate; border-spacing: 0; font-size:.85rem; }
-.table th { text-align:left; padding:16px 14px; background:var(--g50); color:var(--g700); font-weight:700; border-bottom:2px solid var(--g200); font-size:.75rem; text-transform: uppercase; letter-spacing: 0.5px;}
-.table td { padding:16px 14px; border-bottom:1px solid #f1f5f3; vertical-align: middle; }
-.table th:first-child { border-top-left-radius: 12px; }
-.table th:last-child { border-top-right-radius: 12px; }
+.table th { text-align:left; padding:18px 16px; background:var(--g50); color:var(--g700); font-weight:700; border-bottom:2px solid var(--g200); font-size:.78rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;}
+.table td { padding:16px; border-bottom:1px solid #f1f5f3; vertical-align: middle; }
+.table th:first-child { border-top-left-radius: 14px; }
+.table th:last-child { border-top-right-radius: 14px; }
 .table tbody tr { transition: all 0.2s ease; }
-.table tbody tr:hover { background-color: #fdfdfd; box-shadow: inset 0 0 0 9999px rgba(34,197,94,0.02); }
+.table tbody tr:hover { background-color: #fcfdfc; box-shadow: inset 4px 0 0 var(--g400); }
 
-.badge { font-size:.7rem; font-weight:600; padding:6px 12px; border-radius:99px; display:inline-block; }
+.badge { font-size:.7rem; font-weight:600; padding:6px 14px; border-radius:99px; display:inline-block; white-space: nowrap; }
 .badge-orange { background:#fff7ed; color:#ea580c; border:1px solid #fed7aa; }
 .badge-green { background:var(--g50); color:var(--g700); border:1px solid var(--g200); }
 
-.btn { padding:8px 14px; border-radius:10px; font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; }
-.btn-sm { padding:6px 10px; font-size:.72rem; }
-.btn:hover { transform: translateY(-1px); filter: brightness(0.95); }
+.btn { padding:10px 16px; border-radius:12px; font-size:.8rem; font-weight:600; cursor:pointer; transition:all .2s; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; }
+.btn-sm { padding:8px 12px; font-size:.75rem; border-radius:10px; }
+.btn:hover { transform: translateY(-2px); filter: brightness(0.96); }
 
-/* DataTables Custom Styling */
+/* ✨ Custom DataTables Styling (ให้สมดุลกับ Tailwind) */
 .dataTables_wrapper { font-family:'Kanit',sans-serif!important; }
-.dataTables_wrapper .dataTables_length select { border:1.5px solid var(--bdr); border-radius:10px; padding:6px 10px; font-size:.85rem; outline: none;}
+.dt-top-wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+.dt-bottom-wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--bdr); }
+
+.dataTables_wrapper .dataTables_length select { border:1.5px solid var(--bdr); border-radius:10px; padding:8px 14px; font-size:.85rem; outline: none; background: #fff;}
 .dataTables_wrapper .dataTables_length select:focus { border-color: var(--g500); }
-.dataTables_wrapper .dataTables_filter input { border:1.5px solid var(--bdr); border-radius:10px; padding:8px 14px; font-size:.85rem; margin-left:8px; outline: none; transition: all 0.2s; }
-.dataTables_wrapper .dataTables_filter input:focus { border-color: var(--g500); box-shadow: 0 0 0 3px rgba(34,197,94,.1); }
-.dataTables_wrapper .dataTables_info { font-size:.8rem; color:var(--muted); padding-top:16px; }
-.dataTables_wrapper .dataTables_paginate { padding-top:16px; }
-.dataTables_wrapper .dataTables_paginate .paginate_button { border:1px solid var(--bdr); border-radius:10px; padding:6px 14px; margin:0 4px; font-size:.8rem; color:var(--sub)!important; transition: all 0.2s; }
+.dataTables_wrapper .dataTables_filter input { border:1.5px solid var(--bdr); border-radius:12px; padding:10px 16px; font-size:.85rem; margin-left:8px; outline: none; transition: all 0.2s; width: 250px; background: #fafafa;}
+.dataTables_wrapper .dataTables_filter input:focus { border-color: var(--g500); background: #fff; box-shadow: 0 0 0 3px rgba(34,197,94,.1); }
+.dataTables_wrapper .dataTables_info { font-size:.82rem; color:var(--sub); padding-top:0 !important; font-weight: 500;}
+.dataTables_wrapper .dataTables_paginate { padding-top:0 !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button { border:1px solid var(--bdr) !important; border-radius:10px !important; padding:6px 14px !important; margin:0 4px !important; font-size:.82rem !important; font-weight: 500 !important; color:var(--sub)!important; transition: all 0.2s !important; background: #fff !important;}
 .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background:var(--g50)!important; border-color:var(--g300)!important; color:var(--g700)!important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button.current { background:var(--g500)!important; color:#fff!important; border-color:var(--g500)!important; box-shadow: 0 4px 10px rgba(34,197,94,.2); }
-.dt-buttons { margin-bottom:16px; }
-.dt-button { background:linear-gradient(135deg,var(--g500),var(--t500))!important; color:#fff!important; border:none!important; padding:8px 18px!important; border-radius:10px!important; font-size:.8rem!important; font-weight:600!important; margin-right:8px!important; font-family:'Kanit',sans-serif!important; box-shadow: 0 4px 12px rgba(34,197,94,.2)!important; transition: all 0.2s!important; }
-.dt-button:hover { transform: translateY(-2px)!important; box-shadow: 0 6px 15px rgba(34,197,94,.3)!important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover { background:linear-gradient(135deg,var(--g500),var(--t500))!important; color:#fff!important; border:none!important; box-shadow: 0 4px 12px rgba(34,197,94,.25) !important; }
+
+.dt-buttons { display: flex; gap: 8px; }
+.dt-button { background:linear-gradient(135deg,var(--g500),var(--t500))!important; color:#fff!important; border:none!important; padding:10px 20px!important; border-radius:12px!important; font-size:.82rem!important; font-weight:600!important; margin-right:0!important; font-family:'Kanit',sans-serif!important; box-shadow: 0 4px 14px rgba(34,197,94,.2)!important; transition: all 0.2s!important; display: inline-flex; align-items: center; gap: 6px;}
+.dt-button:hover { transform: translateY(-2px)!important; box-shadow: 0 6px 18px rgba(34,197,94,.3)!important; }
 
 ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
 
 /* Input ใน Modal */
-.form-input { width:100%; padding:10px 14px; border:1.5px solid var(--bdr); border-radius:10px; font-family:'Kanit',sans-serif; font-size:.88rem; outline: none; transition: all 0.2s; background: #fafafa;}
-.form-input:focus { border-color: var(--g500); background: #fff; box-shadow: 0 0 0 3px rgba(34,197,94,.1); }
-.form-label { display:block; font-size:.82rem; font-weight:600; color:var(--sub); margin-bottom:6px; }
+.form-input { width:100%; padding:12px 16px; border:1.5px solid var(--bdr); border-radius:12px; font-family:'Kanit',sans-serif; font-size:.88rem; outline: none; transition: all 0.2s; background: #fafafa;}
+.form-input:focus { border-color: var(--g500); background: #fff; box-shadow: 0 0 0 4px rgba(34,197,94,.1); }
+.form-label { display:block; font-size:.85rem; font-weight:600; color:var(--sub); margin-bottom:8px; }
 .swal2-container { font-family: 'Kanit', sans-serif !important; }
 </style>
 </head>
@@ -239,8 +243,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       <i class="fas fa-bars"></i>
     </button>
     <div style="flex:1;">
-      <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:#2b3452;">จัดการผู้ใช้ระบบ</div>
-      <div style="font-size:.75rem;color:var(--muted);"><i class="fas fa-users me-1"></i> สมาชิกทั้งหมด <?= number_format($total) ?> คน</div>
+      <div style="font-family:'Nunito',sans-serif;font-size:1.25rem;font-weight:800;color:#2b3452;">จัดการผู้ใช้ระบบ</div>
+      <div style="font-size:.78rem;color:var(--muted);font-weight:500;"><i class="fas fa-users me-1"></i> สมาชิกทั้งหมด <?= number_format($total) ?> คน</div>
     </div>
   </header>
   
@@ -268,10 +272,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
             <tr>
               <td style="color:var(--muted); font-weight:600;">#<?= $u['id'] ?></td>
               <td>
-                <div style="font-weight:600; color:var(--txt);"><?= htmlspecialchars($u['username']) ?></div>
+                <div style="font-weight:700; color:var(--txt); font-size:.9rem;"><?= htmlspecialchars($u['username']) ?></div>
               </td>
-              <td style="font-size:.8rem;color:var(--muted);"><?= htmlspecialchars($u['email']) ?></td>
-              <td style="font-weight:500;"><?= htmlspecialchars($u['first_name'].' '.$u['last_name']) ?></td>
+              <td style="font-size:.82rem;color:var(--sub);"><?= htmlspecialchars($u['email']) ?></td>
+              <td style="font-weight:500; color:var(--txt);"><?= htmlspecialchars($u['first_name'].' '.$u['last_name']) ?></td>
               <td>
                 <?php if ($u['role'] == 1): ?>
                 <span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;">
@@ -289,30 +293,30 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
                   <?= htmlspecialchars(mb_strimwidth($u['health_conditions'], 0, 25, '...', 'UTF-8')) ?>
                 </span>
                 <?php else: ?>
-                <span style="color:var(--muted);font-size:.8rem;">-</span>
+                <span style="color:var(--muted);font-size:.8rem;font-weight:600;">-</span>
                 <?php endif; ?>
               </td>
-              <td><span style="font-weight:600; color:var(--g600);"><?= $u['daily_calorie_target'] ?: '-' ?></span></td>
+              <td><span style="font-weight:700; color:var(--g600);"><?= $u['daily_calorie_target'] ?: '-' ?></span></td>
               <td><span class="badge badge-green"><i class="fas fa-utensils me-1" style="font-size:.6rem;"></i> <?= $u['meal_count'] ?></span></td>
-              <td data-order="<?= strtotime($u['created_at']) ?>" style="font-size:.8rem; color:var(--muted);">
+              <td data-order="<?= strtotime($u['created_at']) ?>" style="font-size:.82rem; color:var(--muted); font-weight:500;">
                 <?= date('j M Y', strtotime($u['created_at'])) ?>
               </td>
-              <td style="text-align: right; min-width: 320px;">
-                <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
+              <td style="text-align: right; min-width: 330px;">
+                <div style="display:inline-flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
                   
-                  <button type="button" onclick="openEditModal(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['first_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['last_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['daily_calorie_target'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($u['health_conditions'] ?? '', ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#f8faf9; color:var(--g700); border:1px solid var(--bdr);">
+                  <button type="button" onclick="openEditModal(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['first_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['last_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($u['daily_calorie_target'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($u['health_conditions'] ?? '', ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#f1f5f3; color:var(--sub); border:1px solid var(--bdr);">
                     <i class="fas fa-user-edit"></i> แก้ไข
                   </button>
                   
-                  <button type="button" onclick="confirmToggleRole(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>', <?= $u['role'] ?>)" class="btn btn-sm" style="background:#f3e8ff; color:#7c3aed; border:1px solid #d8b4fe;">
-                    <i class="fas fa-user-shield"></i> <?= $u['role'] == 1 ? 'ลด→User' : 'ยก→Admin' ?>
+                  <button type="button" onclick="confirmToggleRole(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>', <?= $u['role'] ?>)" class="btn btn-sm" style="background:#f3e8ff; color:#7c3aed; border:1px solid #e9d5ff;">
+                    <i class="fas fa-user-shield"></i> <?= $u['role'] == 1 ? 'User' : 'Admin' ?>
                   </button>
 
-                  <button type="button" onclick="confirmReset(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
+                  <button type="button" onclick="confirmReset(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#fff7ed; color:#d97706; border:1px solid #ffedd5;">
                     <i class="fas fa-key"></i> Reset PW
                   </button>
 
-                  <button type="button" onclick="confirmDelete(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">
+                  <button type="button" onclick="confirmDelete(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>')" class="btn btn-sm" style="background:#fef2f2; color:#dc2626; border:1px solid #fee2e2;">
                     <i class="fas fa-trash-alt"></i> ลบ
                   </button>
 
@@ -333,11 +337,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     <input type="hidden" name="user_id" id="form_user_id">
 </form>
 
-<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;animation:fadeIn 0.2s;">
-  <div style="background:#fff;border-radius:24px;padding:32px;max-width:550px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,.15);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1px solid var(--bdr);padding-bottom:16px;">
-      <h3 style="font-family:'Nunito',sans-serif;font-size:1.25rem;font-weight:800;color:#2b3452;margin:0;">
-        <i class="fas fa-user-edit" style="color:var(--g500);margin-right:8px;"></i> แก้ไขข้อมูลผู้ใช้
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;animation:fadeIn 0.25s;">
+  <div style="background:#fff;border-radius:24px;padding:36px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;border-bottom:1px solid var(--bdr);padding-bottom:16px;">
+      <h3 style="font-family:'Nunito',sans-serif;font-size:1.35rem;font-weight:800;color:#2b3452;margin:0;display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-user-edit" style="color:var(--g500);"></i> แก้ไขข้อมูลผู้ใช้
       </h3>
       <button type="button" onclick="closeEditModal()" style="width:36px;height:36px;border-radius:10px;border:none;background:#f1f5f3;color:var(--muted);cursor:pointer;font-size:1rem;transition:all 0.2s;">
         <i class="fas fa-times"></i>
@@ -348,45 +352,53 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       <input type="hidden" name="action" value="edit_user">
       <input type="hidden" name="user_id" id="edit_user_id">
       
-      <h4 style="font-size:1rem; font-weight:700; color:var(--txt); margin-bottom:12px;">ข้อมูลบัญชี (Account)</h4>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
-        <div>
-          <label class="form-label">Username</label>
-          <input type="text" name="username" id="edit_username" class="form-input" required>
+      <div style="background:#f8faf9; border:1px solid var(--bdr); border-radius:16px; padding:20px; margin-bottom:24px;">
+        <h4 style="font-size:1rem; font-weight:700; color:var(--txt); margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-id-card text-gray-400"></i> ข้อมูลบัญชี (Account)
+        </h4>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
+          <div>
+            <label class="form-label">Username</label>
+            <input type="text" name="username" id="edit_username" class="form-input" required>
+          </div>
+          <div>
+            <label class="form-label">Email</label>
+            <input type="email" name="email" id="edit_email" class="form-input" required>
+          </div>
         </div>
-        <div>
-          <label class="form-label">Email</label>
-          <input type="email" name="email" id="edit_email" class="form-input" required>
-        </div>
-      </div>
-      
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:24px;">
-        <div>
-          <label class="form-label">ชื่อ</label>
-          <input type="text" name="first_name" id="edit_first_name" class="form-input" required>
-        </div>
-        <div>
-          <label class="form-label">นามสกุล</label>
-          <input type="text" name="last_name" id="edit_last_name" class="form-input" required>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+          <div>
+            <label class="form-label">ชื่อ</label>
+            <input type="text" name="first_name" id="edit_first_name" class="form-input" required>
+          </div>
+          <div>
+            <label class="form-label">นามสกุล</label>
+            <input type="text" name="last_name" id="edit_last_name" class="form-input" required>
+          </div>
         </div>
       </div>
 
-      <h4 style="font-size:1rem; font-weight:700; color:var(--txt); margin-bottom:12px; border-top:1px solid var(--bdr); padding-top:16px;">ข้อมูลสุขภาพ (Health Data)</h4>
-      <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:16px; margin-bottom:24px;">
-        <div>
-          <label class="form-label">เป้าหมาย (kcal/วัน)</label>
-          <input type="number" name="daily_calorie_target" id="edit_target" class="form-input" placeholder="เช่น 2000">
-        </div>
-        <div>
-          <label class="form-label">โรคประจำตัว</label>
-          <input type="text" name="health_conditions" id="edit_conditions" class="form-input" placeholder="เช่น เบาหวาน, ความดัน (หากไม่มีเว้นว่าง)">
+      <div style="background:#f8faf9; border:1px solid var(--bdr); border-radius:16px; padding:20px; margin-bottom:28px;">
+        <h4 style="font-size:1rem; font-weight:700; color:var(--txt); margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-heartbeat text-gray-400"></i> ข้อมูลสุขภาพ (Health Data)
+        </h4>
+        <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:16px;">
+          <div>
+            <label class="form-label">เป้าหมาย (kcal/วัน)</label>
+            <input type="number" name="daily_calorie_target" id="edit_target" class="form-input" placeholder="เช่น 2000">
+          </div>
+          <div>
+            <label class="form-label">โรคประจำตัว</label>
+            <input type="text" name="health_conditions" id="edit_conditions" class="form-input" placeholder="เช่น เบาหวาน, ความดัน (หากไม่มีเว้นว่าง)">
+          </div>
         </div>
       </div>
       
-      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px;">
-        <button type="button" onclick="closeEditModal()" class="btn" style="background:#f1f5f3; color:var(--sub); padding:12px 20px;">ยกเลิก</button>
-        <button type="submit" class="btn" style="background:linear-gradient(135deg,var(--g500),var(--t500)); color:#fff; padding:12px 24px; box-shadow:0 4px 12px rgba(34,197,94,.2);">
-          <i class="fas fa-save"></i> บันทึกข้อมูล
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px; border-top:1px solid var(--bdr); padding-top:20px;">
+        <button type="button" onclick="closeEditModal()" class="btn" style="background:#f1f5f3; color:var(--sub); padding:12px 24px;">ยกเลิก</button>
+        <button type="submit" class="btn" style="background:linear-gradient(135deg,var(--g500),var(--t500)); color:#fff; padding:12px 28px; box-shadow:0 4px 14px rgba(34,197,94,.25);">
+          <i class="fas fa-save"></i> บันทึกข้อมูลผู้ใช้
         </button>
       </div>
     </form>
@@ -395,8 +407,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 <style>
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
 }
 #editModal button[onclick="closeEditModal()"]:hover {
     background: #fee2e2 !important;
@@ -412,7 +424,8 @@ document.addEventListener('DOMContentLoaded', function() {
             title: 'สำเร็จ!',
             text: '<?= htmlspecialchars($success_msg) ?>',
             confirmButtonColor: '#22c55e',
-            confirmButtonText: 'ตกลง'
+            confirmButtonText: 'ตกลง',
+            customClass: { popup: 'swal2-custom-popup' }
         });
     <?php endif; ?>
 
@@ -422,20 +435,21 @@ document.addEventListener('DOMContentLoaded', function() {
             title: 'พบข้อผิดพลาด!',
             text: '<?= htmlspecialchars($error_msg) ?>',
             confirmButtonColor: '#dc2626',
-            confirmButtonText: 'ตกลง'
+            confirmButtonText: 'ตกลง',
+            customClass: { popup: 'swal2-custom-popup' }
         });
     <?php endif; ?>
 });
 
 function confirmDelete(id, username) {
     Swal.fire({
-        title: 'ยืนยันการลบผู้ใช้?',
+        title: 'ยืนยันการลบผู้ใช้',
         html: `คุณต้องการลบผู้ใช้ <b>${username}</b> ใช่หรือไม่?<br><span style="color:#dc2626; font-size:0.9rem;">(ข้อมูลประวัติอาหารและการแชทจะถูกลบทั้งหมด)</span>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
         cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'ใช่, ลบผู้ใช้!',
+        confirmButtonText: 'ลบผู้ใช้!',
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
         if (result.isConfirmed) {
@@ -448,13 +462,13 @@ function confirmDelete(id, username) {
 
 function confirmReset(id, username) {
     Swal.fire({
-        title: 'รีเซ็ตรหัสผ่าน?',
+        title: 'รีเซ็ตรหัสผ่าน',
         html: `คุณแน่ใจหรือไม่ที่จะรีเซ็ตรหัสผ่านของ <b>${username}</b><br>ให้เป็นรหัสเริ่มต้น (password123)`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#d97706',
         cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'ใช่, รีเซ็ตเลย!',
+        confirmButtonText: 'รีเซ็ตเลย!',
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
         if (result.isConfirmed) {
@@ -471,13 +485,13 @@ function confirmToggleRole(id, username, currentRole) {
     const icon = currentRole == 1 ? 'fa-user' : 'fa-crown';
     
     Swal.fire({
-        title: 'เปลี่ยนสถานะผู้ใช้?',
+        title: 'เปลี่ยนสถานะผู้ใช้',
         html: `คุณต้องการเปลี่ยนสถานะของ <b>${username}</b><br>เป็น <span style="color:${newRoleColor};"><i class="fas ${icon}"></i> ${newRole}</span> ใช่หรือไม่?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#7c3aed',
         cancelButtonColor: '#9ca3af',
-        confirmButtonText: `ใช่, เปลี่ยนเป็น ${newRole}!`,
+        confirmButtonText: `เปลี่ยนเป็น ${newRole}!`,
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
         if (result.isConfirmed) {
@@ -506,9 +520,8 @@ $(document).ready(function() {
         previous: "ก่อนหน้า"
       }
     },
-    dom: "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
-         "<'row'<'col-sm-12'tr>>" +
-         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    // ✨ ปรับแก้ Layout ของ DataTables ให้เข้ากับ Tailwind สมดุลขึ้น
+    dom: "<'dt-top-wrap'Bf>rt<'dt-bottom-wrap'lip><'clear'>",
     buttons: [
       {
         extend: "excel",
