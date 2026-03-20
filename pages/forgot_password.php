@@ -536,6 +536,38 @@ if (otpInputs.length > 0) {
   }
 }
 </script>
+<?php if (strpos($success_msg, 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว') !== false): ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. ซ่อนกล่องข้อความแจ้งเตือนเดิมทั้งหมด (ทั้งสีเขียวและสีแดงที่กวนใจ)
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(el => el.style.display = 'none');
+    
+    // 2. ซ่อนปุ่ม "เริ่มต้นใหม่" ที่โผล่มาผิดจังหวะ
+    const retryBtn = document.querySelector('a[href="forgot_password.php?step=request"]');
+    if (retryBtn) retryBtn.style.display = 'none';
+
+    // 3. แสดง Popup สวยๆ ดึงดูดสายตาให้ชัดเจน
+    Swal.fire({
+        icon: 'success',
+        title: 'เปลี่ยนรหัสผ่านสำเร็จ!',
+        text: 'กำลังพาคุณไปหน้าเข้าสู่ระบบ...',
+        showConfirmButton: false, // ซ่อนปุ่มกดเพื่อบังคับให้รอ
+        timer: 2000, // แสดง 2 วินาทีให้พอดีกับที่โค้ด PHP ตั้งเวลาไว้
+        timerProgressBar: true, 
+        allowOutsideClick: false // ป้องกันผู้ใช้คลิกพื้นที่ว่างแล้วป๊อปอัปหาย
+    }).then(() => {
+        // 4. พาเด้งไปหน้า login ทันที
+        window.location.href = 'login.php'; 
+    });
+});
+</script>
+<style>
+  /* บังคับให้ป๊อปอัปใช้ฟอนต์ Kanit ให้กลมกลืนกับเว็บคุณ */
+  .swal2-container { font-family: 'Kanit', sans-serif !important; }
+</style>
+<?php endif; ?>
 
 </body>
 </html>
