@@ -2,21 +2,22 @@
 // sidebar_admin.php
 $current_page = basename($_SERVER['PHP_SELF']);
 
-$sb_admin_fname = "Admin";
-$sb_admin_lname = "";
+$sb_admin_username = "Admin";
+$sb_admin_profile_image = "";
 
 if (isset($_SESSION['user_id']) && isset($conn)) {
-    $sb_adm_sql = "SELECT first_name, last_name FROM users WHERE id = ?";
+    // แก้ไขคำสั่ง SQL ให้ดึง username และ profile_image แทนชื่อ-นามสกุล
+    $sb_adm_sql = "SELECT username, profile_image FROM users WHERE id = ?";
     $sb_adm_stmt = $conn->prepare($sb_adm_sql);
     $sb_adm_stmt->bind_param("i", $_SESSION['user_id']);
     $sb_adm_stmt->execute();
     $sb_adm_res = $sb_adm_stmt->get_result()->fetch_assoc();
     if ($sb_adm_res) {
-        $sb_admin_fname = $sb_adm_res['first_name'] ?? 'Admin';
-        $sb_admin_lname = $sb_adm_res['last_name'] ?? '';
+        $sb_admin_username = !empty($sb_adm_res['username']) ? $sb_adm_res['username'] : 'Admin';
+        $sb_admin_profile_image = $sb_adm_res['profile_image'] ?? '';
     }
 }
-$sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
+$sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_username, 0, 2));
 ?>
 
 <div class="sidebar-overlay" id="adminSidebarOverlay"></div>
@@ -94,18 +95,25 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   </nav>
 
   <div class="sb-user">
-    <div class="sb-av"><?= htmlspecialchars($sb_admin_initials ?: 'A') ?></div>
+    <div class="sb-av">
+      <?php if ($sb_admin_profile_image && file_exists("../public/uploads/avatars/" . $sb_admin_profile_image)): ?>
+        <img src="../public/uploads/avatars/<?= htmlspecialchars($sb_admin_profile_image) ?>?t=<?= time() ?>" alt="<?= htmlspecialchars($sb_admin_username) ?>">
+      <?php else: ?>
+        <?= htmlspecialchars($sb_admin_initials ?: 'A') ?>
+      <?php endif; ?>
+    </div>
+    
     <div style="min-width:0; flex:1;">
-      <div class="sb-un">
-        <?= htmlspecialchars($sb_admin_fname . ' ' . $sb_admin_lname) ?>
+      <div class="sb-un" title="<?= htmlspecialchars($sb_admin_username) ?>">
+        <?= htmlspecialchars($sb_admin_username) ?>
       </div>
       <div class="sb-user-role">
         <i class="fas fa-circle" style="font-size:6px !important;color:#4ade80;vertical-align:middle;margin-right:4px;"></i>ผู้ดูแลระบบ
       </div>
     </div>
     <a href="../pages/logout.php" class="logout-btn" title="ออกจากระบบ" onclick="confirmLogout(event, this.href)">
-  <i class="fas fa-sign-out-alt"></i>
-</a>
+      <i class="fas fa-sign-out-alt"></i>
+    </a>
   </div>
 
 </aside>
@@ -235,12 +243,21 @@ $sb_admin_initials = mb_strtoupper(mb_substr($sb_admin_fname, 0, 1));
   align-items: center !important; gap: 12px !important; margin-top: auto !important;
 }
 
+/* ✅ เพิ่ม CSS ให้รองรับรูปภาพเต็มวงเหมือนฝั่ง User */
 #adminSidebar .sb-av {
   width: 40px !important; height: 40px !important; border-radius: 50% !important;
   background: linear-gradient(135deg, #22c55e, #14b8a6) !important;
   display: flex !important; align-items: center !important; justify-content: center !important;
   font-size: 15px !important; font-weight: 800 !important; color: #fff !important;
   flex-shrink: 0 !important; box-shadow: 0 4px 10px rgba(34,197,94,.25) !important;
+  overflow: hidden !important; 
+  position: relative !important;
+}
+#adminSidebar .sb-av img {
+  width: 100% !important; height: 100% !important;
+  object-fit: cover !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
 }
 
 #adminSidebar .sb-un {
