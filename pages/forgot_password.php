@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             // เตรียมข้อมูลสำหรับส่งอีเมล
             $to = $user['email'];
-            $subject = "🔐 รหัส OTP สำหรับรีเซ็ตรหัสผ่าน - FoodAI";
+            $subject = "รหัส OTP สำหรับรีเซ็ตรหัสผ่าน - FoodAI";
             $user_name = $user['first_name'] ?: $user['username'];
             
             // รูปแบบอีเมลของคุณที่ออกแบบไว้
@@ -307,7 +307,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 <div class="container">
   <div class="card">
     <div class="logo-wrapper">
-      <div class="logo"></div>
+      <div class="logo"><i class="bi bi-shield-lock" style="color: #ffffff;"></i></div>
     </div>
     
     <?php if ($success_msg): ?>
