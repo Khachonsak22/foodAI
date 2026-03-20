@@ -53,10 +53,10 @@
         <h3 class="footer-title">ฟีเจอร์</h3>
         <ul class="footer-links">
           <li><a href="pages/login.php"><i class="fas fa-user-cog"></i> ตั้งค่าโปรไฟล์</a></li>
-          <li><a href="#"><i class="fas fa-chart-line"></i> ติดตามแคลอรี่</a></li>
-          <li><a href="#"><i class="fas fa-heart"></i> เมนูโปรด</a></li>
-          <li><a href="#"><i class="fas fa-filter"></i> กรองตามโรค</a></li>
-          <li><a href="#"><i class="fas fa-bell"></i> การแจ้งเตือน</a></li>
+          <li><a href="pages/login.php"><i class="fas fa-chart-line"></i> ติดตามแคลอรี่</a></li>
+          <li><a href="pages/login.php?filter=favorites"><i class="fas fa-heart"></i> เมนูโปรด</a></li>
+          <li><a href="pages/login.php"><i class="fa-solid fa-snowflake"></i> ตู้เย็นอัจฉริยะ</a></li>
+          <li><a href="pages/login.php"><i class="fas fa-newspaper"></i> ข่าวสารสุขภาพ</a></li>
         </ul>
       </div>
 
