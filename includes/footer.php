@@ -41,10 +41,10 @@
         <h3 class="footer-title">เมนูหลัก</h3>
         <ul class="footer-links">
           <li><a href="dashboard.php"><i class="fas fa-home"></i> หน้าแรก</a></li>
-          <li><a href="recipes.php"><i class="fas fa-utensils"></i> สูตรอาหาร</a></li>
-          <li><a href="meal_log.php"><i class="fas fa-book"></i> บันทึกมื้ออาหาร</a></li>
-          <li><a href="menu_popular.php"><i class="fas fa-fire"></i> เมนูยอดนิยม</a></li>
           <li><a href="ai_chat.php"><i class="fas fa-robot"></i> AI แนะนำเมนู</a></li>
+          <li><a href="recipes.php"><i class="fas fa-book"></i> สูตรอาหาร</a></li>
+          <li><a href="meal_log.php"><i class="fas fa-clipboard-list"></i> บันทึกมื้ออาหาร</a></li>
+          <li><a href="menu_popular.php"><i class="fas fa-fire"></i> เมนูยอดนิยม</a></li>
         </ul>
       </div>
 
@@ -53,10 +53,10 @@
         <h3 class="footer-title">ฟีเจอร์</h3>
         <ul class="footer-links">
           <li><a href="setup_profile.php"><i class="fas fa-user-cog"></i> ตั้งค่าโปรไฟล์</a></li>
-          <li><a href="#"><i class="fas fa-chart-line"></i> ติดตามแคลอรี่</a></li>
-          <li><a href="#"><i class="fas fa-heart"></i> เมนูโปรด</a></li>
-          <li><a href="#"><i class="fas fa-filter"></i> กรองตามโรค</a></li>
-          <li><a href="#"><i class="fas fa-bell"></i> การแจ้งเตือน</a></li>
+          <li><a href="nutrition.php"><i class="fas fa-chart-line"></i> ติดตามแคลอรี่</a></li>
+          <li><a href="recipes.php?filter=favorites"><i class="fas fa-heart"></i> เมนูโปรด</a></li>
+          <li><a href="smart_fridge.php"><i class="fa-solid fa-snowflake"></i> ตู้เย็นอัจฉริยะ</a></li>
+          <li><a href="news.php"><i class="fas fa-newspaper"></i> ข่าวสารสุขภาพ</a></li>
         </ul>
       </div>
 

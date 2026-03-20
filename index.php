@@ -515,7 +515,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
     </div>
     <div class="features-grid">
       <div class="feature-card reveal">
-        <div class="feature-icon"><i class="fas fa-robot" style="color: #62d4da;"></i></div>
+        <div class="feature-icon"><i class="fas fa-robot" style="color: #ffffff;"></i></div>
         <h3 class="feature-title">AI แนะนำเมนู</h3>
         <p class="feature-desc">
           ปัญญาประดิษฐ์วิเคราะห์และแนะนำเมนูที่เหมาะกับโรคประจำตัว 
@@ -523,7 +523,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
         </p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon"><i class="bi bi-bar-chart-line-fill" style="color: #2d56f7;"></i></div>
+        <div class="feature-icon"><i class="fas fa-chart-line" style="color: #ffffff;"></i></div>
         <h3 class="feature-title">ติดตามแคลอรี่</h3>
         <p class="feature-desc">
           บันทึกและติดตามแคลอรี่ทุกมื้อ พร้อมกราฟและสถิติ
@@ -547,7 +547,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
         </p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon"><i class="bi bi-suit-heart-fill" style="color: #dc2626;"></i></div>
+        <div class="feature-icon"><i class="bi bi-suit-heart-fill" style="color: #ffffff;"></i></div>
         <h3 class="feature-title">เมนูโปรด</h3>
         <p class="feature-desc">
           บันทึกเมนูที่ชอบไว้ดูง่าย เข้าถึงได้รวดเร็ว
@@ -555,7 +555,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
         </p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon"><i class="bi bi-phone" style="color: #fff23b;"></i></div>
+        <div class="feature-icon"><i class="bi bi-phone" style="color: #ffffff;"></i></div>
         <h3 class="feature-title">ใช้งานง่าย</h3>
         <p class="feature-desc">
           Interface สวยงาม ใช้งานสะดวก รองรับทุกอุปกรณ์

@@ -190,7 +190,7 @@ $menu_count = $menu_count ?? 0;
     </a>
 
     <a href="recipes.php" class="nav-item <?php echo ($current_page==='recipes.php' || $current_page==='recipe_detail.php')?'active':''; ?>">
-      <span class="nav-icon-wrap"><i class="fas fa-book-open"></i></span>
+      <span class="nav-icon-wrap"><i class="fas fa-book"></i></span>
       <span>สูตรอาหาร</span>
     </a>
 
