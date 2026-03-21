@@ -34,7 +34,7 @@ $most_viewed_sql = "
     FROM recipes r
     WHERE r.view_count > 0
     ORDER BY r.view_count DESC
-    LIMIT 8
+    LIMIT 10
 ";
 
 $stmt_viewed = $conn->prepare($most_viewed_sql);
@@ -58,7 +58,7 @@ $most_favorited_sql = "
     INNER JOIN user_interactions ui ON r.id = ui.recipe_id AND ui.interaction_type = 'favorite'
     GROUP BY r.id
     ORDER BY fav_count DESC
-    LIMIT 8
+    LIMIT 10
 ";
 
 $stmt_fav = $conn->prepare($most_favorited_sql);
