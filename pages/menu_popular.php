@@ -34,7 +34,7 @@ $most_viewed_sql = "
     FROM recipes r
     WHERE r.view_count > 0
     ORDER BY r.view_count DESC
-    LIMIT 20
+    LIMIT 8
 ";
 
 $stmt_viewed = $conn->prepare($most_viewed_sql);
@@ -58,7 +58,7 @@ $most_favorited_sql = "
     INNER JOIN user_interactions ui ON r.id = ui.recipe_id AND ui.interaction_type = 'favorite'
     GROUP BY r.id
     ORDER BY fav_count DESC
-    LIMIT 20
+    LIMIT 8
 ";
 
 $stmt_fav = $conn->prepare($most_favorited_sql);
@@ -290,7 +290,7 @@ main {
     <!-- REST OF VIEWED -->
     <?php if (count($rest_viewed) > 0): ?>
     <div class="rv rv3" style="margin-bottom:3rem;">
-      <h2 class="stitle" style="margin-bottom:18px;">เมนูที่มีผู้เข้าดูมากอื่นๆ</h2>
+      <h2 class="stitle" style="margin-bottom:18px;">เมนูที่มีผู้เข้าดูอื่นๆ</h2>
       
       <div class="recipe-grid">
         <?php foreach ($rest_viewed as $idx => $r):
