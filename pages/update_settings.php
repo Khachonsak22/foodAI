@@ -37,7 +37,7 @@ if ($action === 'upload_avatar') {
         }
         
         // Create upload directory if not exists
-        $upload_dir = '../public/uploads/avatars/';
+        $upload_dir = __DIR__ .'../public/uploads/avatars/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
