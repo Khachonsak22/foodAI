@@ -10,21 +10,29 @@ if (!isset($_SESSION['user_id'])) {
 $user_id   = $_SESSION['user_id'];
 $user_name = $_SESSION['first_name'] ?? 'คุณลูกค้า';
 
-if (!isset($_SESSION['first_name'])) {
-    $sql  = "SELECT first_name, last_name FROM users WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($row = $res->fetch_assoc()) {
-        $user_name = $row['first_name'];
-        $lastName  = $row['last_name'] ?? '';
-    }
+// ── แก้ไข: ดึงข้อมูลชื่อ นามสกุล และ รูปโปรไฟล์ จากฐานข้อมูล ──
+$sql  = "SELECT first_name, last_name, profile_image FROM users WHERE id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$res = $stmt->get_result();
+
+$profile_image = '';
+$lastName = '';
+if ($row = $res->fetch_assoc()) {
+    $user_name = !empty($row['first_name']) ? $row['first_name'] : $user_name;
+    $lastName  = $row['last_name'] ?? '';
+    $profile_image = $row['profile_image'] ?? '';
 }
 
 $firstName = $user_name;
-$lastName  = $lastName ?? '';
 $initials  = mb_strtoupper(mb_substr($firstName,0,1)).mb_strtoupper(mb_substr($lastName,0,1));
+
+// เตรียม URL รูปโปรไฟล์ (เช็กว่ามีไฟล์อยู่จริงไหม)
+$profile_image_url = null;
+if (!empty($profile_image) && file_exists("../public/uploads/avatars/" . $profile_image)) {
+    $profile_image_url = "../public/uploads/avatars/" . htmlspecialchars($profile_image) . "?t=" . time();
+}
 
 // ── แก้ไขการดึงประวัติแชทให้แยกระหว่าง "ข้อความ" และ "ข้อมูลเมนูอาหาร" ──
 $history   = [];
@@ -232,17 +240,30 @@ const chatArea   = document.getElementById('chatArea');
 const inputField = document.getElementById('aiQuery');
 const sendBtn    = document.getElementById('sendBtn');
 const chipsRow   = document.getElementById('chipsRow');
-const initials   = <?= json_encode($initials ?: 'U') ?>;
+
+// ── แก้ไข: ดึงข้อมูล Initial และ Profile Image URL มาใช้งานใน JS ──
+const initials        = <?= json_encode($initials ?: 'U') ?>;
+const profileImageUrl = <?= json_encode($profile_image_url) ?>;
+
 const chatHistory = <?= json_encode($history) ?>;
 const urlParams  = new URLSearchParams(window.location.search);
 const autoMessage = urlParams.get('ingredients');
 
-function aiAvatar() { return `<div class="msg-avatar ai">
+function aiAvatar() { 
+  return `<div class="msg-avatar ai">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chef-hat" style="color: #c1c1c1;">
         <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
         <line x1="6" x2="18" y1="17" y2="17"/>
-      </svg></div>`; }
-function userAvatar() { return `<div class="msg-avatar user-av">${initials}</div>`; }
+      </svg></div>`; 
+}
+
+// ── แก้ไข: ฟังก์ชันแสดงรูปโปรไฟล์ของ User ในกล่องแชท ──
+function userAvatar() { 
+  if (profileImageUrl) {
+    return `<div class="msg-avatar user-av" style="overflow:hidden; padding:0;"><img src="${profileImageUrl}" style="width:100%;height:100%;object-fit:cover;" alt="User"></div>`;
+  }
+  return `<div class="msg-avatar user-av">${initials}</div>`; 
+}
 
 function renderMessage(sender, text, animate = false, menus = null) {
   const rowEl = document.createElement('div');
