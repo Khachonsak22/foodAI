@@ -2,302 +2,376 @@
 session_start();
 include '../config/connect.php';
 
-// ดักไว้เลย ถ้ายังไม่ล็อกอิน ให้เตะออก
 if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Unauthorized']);
+    header("Location: login.php");
     exit();
 }
 
-header('Content-Type: application/json');
+$user_id   = $_SESSION['user_id'];
+$user_name = $_SESSION['first_name'] ?? 'คุณลูกค้า';
+$profile_image = '';
 
-$inputJSON = file_get_contents('php://input');
-$input = json_decode($inputJSON, true);
-$userId = $_SESSION['user_id'] ?? 0;
-
-// ─── เพิ่มใหม่: ดึงชื่อผู้ใช้ ───
-$userName = 'ผู้ใช้งาน';
-if ($userId > 0) {
-    $u_stmt = $conn->prepare("SELECT username FROM users WHERE id = ?");
-    $u_stmt->bind_param("i", $userId);
-    $u_stmt->execute();
-    if ($u_row = $u_stmt->get_result()->fetch_assoc()) {
-        $userName = $u_row['username'];
-    }
+// ดึงข้อมูลชื่อและรูปโปรไฟล์จากฐานข้อมูล
+$sql  = "SELECT first_name, last_name, profile_image FROM users WHERE id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$res = $stmt->get_result();
+if ($row = $res->fetch_assoc()) {
+    $user_name = $row['first_name'] ?? $user_name;
+    $lastName  = $row['last_name'] ?? '';
+    $profile_image = $row['profile_image'] ?? '';
 }
 
-// ─── เพิ่มใหม่: ระบบทักทายตอนเปิดหน้าเว็บครั้งแรกของวัน ───
-if (isset($input['action']) && $input['action'] === 'get_greeting') {
-    // เช็คว่าวันนี้มีการคุยกันหรือยัง จะได้ไม่ทักซ้ำเวลารีเฟรชหน้า
-    $check_stmt = $conn->prepare("SELECT id FROM chat_logs WHERE user_id = ? AND DATE(created_at) = CURDATE() LIMIT 1");
-    $check_stmt->bind_param("i", $userId);
-    $check_stmt->execute();
+$firstName = $user_name;
+$lastName  = $lastName ?? '';
+$initials  = mb_strtoupper(mb_substr($firstName,0,1)).mb_strtoupper(mb_substr($lastName,0,1));
+
+// ── แก้ไขการดึงประวัติแชทให้แยกระหว่าง "ข้อความ" และ "ข้อมูลเมนูอาหาร" ──
+$history   = [];
+$chat_sql  = "SELECT sender, message FROM chat_logs WHERE user_id = ? ORDER BY id ASC";
+$chat_stmt = $conn->prepare($chat_sql);
+$chat_stmt->bind_param("i", $user_id);
+$chat_stmt->execute();
+$chat_res  = $chat_stmt->get_result();
+
+while ($row = $chat_res->fetch_assoc()) {
+    // ใช้ |||MENUS||| เป็นตัวแบ่งระหว่างข้อความแชท และ JSON ของเมนูที่แนะนำ
+    $parts = explode('|||MENUS|||', $row['message']);
+    $msg_text = $parts[0];
+    $menus_json = isset($parts[1]) ? json_decode($parts[1], true) : null;
     
-    if ($check_stmt->get_result()->num_rows === 0) {
-        // ถ้ายังไม่มีแชทเลยในวันนี้ ให้ AI เริ่มทักก่อน
-        $greet_msg = "สวัสดีครับคุณ {$userName}! 🌅 วันนี้อยากทานอะไร หรือให้เชฟช่วยคิดเมนูสำหรับ 1 วัน ที่เหมาะกับคุณให้ครับ?";
-        
-        // บันทึกลง log ฝั่ง AI 
-        $log_stmt = $conn->prepare("INSERT INTO chat_logs (user_id, sender, message) VALUES (?, 'ai', ?)");
-        $log_stmt->bind_param("is", $userId, $greet_msg);
-        $log_stmt->execute();
-        
-        echo json_encode(['chat_response' => $greet_msg, 'recommended_menus' => []]);
-    } else {
-        // วันนี้ทักไปแล้ว ไม่ต้องส่งข้อความทักทายซ้ำ
-        echo json_encode(['chat_response' => '', 'recommended_menus' => []]);
-    }
-    exit();
-}
-// ────────────────────────────────────────────────
-
-$userMessage = $input['message'] ?? '';
-if (!$userMessage) { echo json_encode(['reply' => '']); exit; }
-
-// บันทึก Log ฝั่ง User
-if ($userId > 0) {
-    $stmt = $conn->prepare("INSERT INTO chat_logs (user_id, sender, message) VALUES (?, 'user', ?)");
-    $stmt->bind_param("is", $userId, $userMessage);
-    $stmt->execute();
-}
-
-// ดึงข้อมูลสุขภาพ (เป้าหมาย, โรคประจำตัว, และชื่อเป้าหมายจากตาราง goals)
-$profile = ['target' => 2000, 'conditions' => 'ไม่มี', 'goal_title' => 'ไม่ระบุ', 'goal_desc' => ''];
-if ($userId > 0) {
-    // JOIN ตาราง goals เพื่อให้รู้ชื่อภาษาไทยของเป้าหมาย
-    $stmt = $conn->prepare("
-        SELECT hp.daily_calorie_target, hp.health_conditions, g.title AS goal_title, g.description AS goal_desc
-        FROM health_profiles hp
-        LEFT JOIN goals g ON hp.goal_preference = g.goal_key
-        WHERE hp.user_id = ?
-    ");
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    if ($row = $stmt->get_result()->fetch_assoc()) {
-        $profile['target'] = $row['daily_calorie_target'];
-        $profile['conditions'] = !empty($row['health_conditions']) ? $row['health_conditions'] : 'ไม่มี';
-        $profile['goal_title'] = !empty($row['goal_title']) ? $row['goal_title'] : 'ไม่ระบุ';
-        $profile['goal_desc']  = !empty($row['goal_desc']) ? $row['goal_desc'] : '';
-    }
-}
-
-// ดึงข้อมูลอาหารที่แพ้
-$allergies = [];
-if ($userId > 0) {
-    $stmt = $conn->prepare("SELECT i.name FROM user_allergies ua JOIN ingredients i ON ua.ingredient_id = i.id WHERE ua.user_id = ?");
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while($r = $res->fetch_assoc()) {
-        $allergies[] = $r['name'];
-    }
-}
-$allergy_str = empty($allergies) ? 'ไม่มี' : implode(", ", $allergies);
-
-// ดึงรายชื่อเมนูที่มีในระบบ (เพื่อใช้พิจารณาก่อนคิดเมนูใหม่)
-$existing_recipes = [];
-$r_stmt = $conn->query("SELECT title FROM recipes LIMIT 200");
-while($r_row = $r_stmt->fetch_assoc()) {
-    $existing_recipes[] = $r_row['title'];
-}
-//เพิ่มบรรทัดนี้เพื่อแปลง Array ให้เป็น String 
-$recipes_str = empty($existing_recipes) ? 'ไม่มี' : implode(", ", $existing_recipes);
-
-
-// ── ดึงประวัติเมนูที่ AI เคยแนะนำไปแล้ว 10 เมนูล่าสุด (เพื่อกัน AI แนะนำซ้ำ) ──
-$past_menus = [];
-if ($userId > 0) {
-    $past_stmt = $conn->prepare("SELECT menu_name FROM ai_saved_menus WHERE user_id = ? ORDER BY created_at DESC LIMIT 10");
-    $past_stmt->bind_param("i", $userId);
-    $past_stmt->execute();
-    $past_res = $past_stmt->get_result();
-    while($r = $past_res->fetch_assoc()) {
-        $past_menus[] = $r['menu_name'];
-    }
-}
-$past_menu_str = empty($past_menus) ? 'ไม่มี' : implode(", ", $past_menus);
-
-
-// System Prompt
-$systemPrompt = "คุณคือเชฟและนักโภชนาการอัจฉริยะ ตอบกลับเป็นภาษาไทยที่สุภาพและเป็นกันเอง
-
-**สำคัญมาก:** ในการตอบกลับทุกครั้ง คุณต้องเรียกชื่อผู้ใช้ด้วยความเป็นมิตร เช่น:
-- เริ่มต้นด้วย \"สวัสดีครับคุณ{$userName}\" หรือ \"คุณ{$userName}ครับ\"
-- ใช้ตลอดการสนทนา เช่น \"สำหรับคุณ{$userName}...\" \"คุณ{$userName}สามารถ...\"
-- สร้างความรู้สึกเป็นกันเองและใส่ใจเฉพาะบุคคล
-
-ข้อมูลผู้ใช้:
-- ชื่อ: {$userName}
-- เป้าหมายแคลอรี่: {$profile['target']} kcal/วัน
-- เป้าหมายสุขภาพ (Goal): {$profile['goal_title']} ({$profile['goal_desc']})
-- โรคประจำตัว: {$profile['conditions']}
-- อาหารที่แพ้: {$allergy_str}
-- เมนูที่เพิ่งทานไปเมื่อเร็วๆ นี้ (ห้ามแนะนำซ้ำเด็ดขาด): {$past_menu_str}
-
-รายชื่อเมนูที่มีในฐานข้อมูลระบบ: {$recipes_str}
-
-คำสั่งสำคัญ:
-1. หากผู้ใช้ต้องการให้จัดเมนู ให้คุณจัดเมนูอาหารไทยที่มีอยู่จริง รวมทั้งหมด 4 มื้อ (มื้อเช้า, มื้อกลางวัน, มื้อเย็น, และมื้อว่าง 1 มื้อ)
-2. **กฎเหล็กข้อที่ 1 (ห้ามซ้ำ):** เมนูทั้ง 4 มื้อในครั้งนี้ จะต้องไม่ซ้ำกันเองเลย และต้องไม่ซ้ำกับ 'เมนูที่เพิ่งทานไปเมื่อเร็วๆ นี้' โดยเด็ดขาด
-3. คุณต้องตรวจสอบ 'โรคประจำตัว' และ 'อาหารที่แพ้' ของคุณ{$userName} อย่างเคร่งครัด เมนูที่แนะนำต้องปลอดภัย 100%
-4. **กฎเหล็กข้อที่ 2 (ห้ามเปลี่ยนชื่อ):** คุณต้องดึงเมนูจาก 'รายชื่อเมนูที่มีในฐานข้อมูลระบบ' มาใช้ก่อนเสมอ โดยต้องสะกดชื่อเมนูให้ตรงกับในฐานข้อมูลเป๊ะ 100% ห้ามเติมคำหรือแต่งชื่อใหม่เด็ดขาด
-5. **กฎเหล็กข้อที่ 3 (การคิดเมนูใหม่):** อนุญาตให้คิดเมนูใหม่ **ก็ต่อเมื่อ** เมนูในระบบไม่มีอันไหนเลยที่ตรงกับเงื่อนไขสุขภาพ หรือเมนูในระบบถูกกินซ้ำไปหมดแล้วเท่านั้น
-6. **สำคัญมาก:** สำหรับแต่ละเมนู ต้องมีข้อมูลครบถ้วน:
-   - name: ชื่อเมนู (ต้องตรงกับฐานข้อมูลเป๊ะๆ หากเลือกจากระบบ)
-   - calories: แคลอรี่ที่แม่นยำ (เป็นตัวเลข)
-   - ingredients: วัตถุดิบพร้อมปริมาณ (แยกบรรทัดด้วย \\n)
-   - instructions: วิธีทำทีละขั้นตอน (แยกเป็นข้อๆ ด้วย \\n)
-   - desc: คำอธิบายสั้นๆ และคำแนะนำด้านโภชนาการ
-7. ให้ตอบกลับในรูปแบบ **JSON เท่านั้น** โดยไม่มี Markdown (```json) ครอบ
-8. ในช่อง \"name\" ของ recommended_menus ให้ใส่แค่ชื่อเมนูอาหารเพียวๆ ห้ามมีคำว่า มื้อเช้า มื้อเย็น นำหน้าหรือต่อท้ายเด็ดขาด
-
-รูปแบบ JSON ที่ต้องการ:
-{
-  \"chat_response\": \"สวัสดีครับคุณ{$userName}! ข้อความอธิบายว่าทำไมถึงเลือกเมนูเหล่านี้ ปลอดภัยต่อโรคประจำตัวหรืออาหารที่แพ้อย่างไร\",
-  \"recommended_menus\": [
-    {
-      \"name\": \"ข้าวต้มไก่ใส่ขิง\",
-      \"calories\": 380,
-      \"ingredients\": \"- ข้าวหอมมะลิ 80 กรัม\\n- อกไก่สับ 80 กรัม\\n- ขิงหั่นฝอย 20 กรัม\\n- ผักชี 10 กรัม\\n- กระเทียมเจียว 1 ช้อนโต๊ะ\\n- น้ำซุป 3 ถ้วย\\n- ซีอิ๊วขาว 1 ช้อนชา\",
-      \"instructions\": \"1. ต้มน้ำให้เดือด ใส่ข้าว\\n2. ต้มจนข้าวเริ่มสุก เคี่ยวไฟอ่อน\\n3. ใส่อกไก่สับ คนเบาๆ\\n4. เติมขิงหั่นฝอย\\n5. ปรุงรสด้วยซีอิ๊วขาว\\n6. ตักใส่ชาม โรยผักชีและกระเทียมเจียว\\n7. เสิร์ฟร้อนๆ\",
-      \"desc\": \"เหมาะกับผู้ป่วยเบาหวาน ย่อยง่าย ให้พลังงานสม่ำเสมอ\"
-    }
-  ]
-}
-หมายเหตุ: 
-- ถ้าผู้ใช้แค่ชวนคุยทั่วไป ไม่ได้ขอเมนู ให้ปล่อย recommended_menus เป็นอาเรย์ว่าง []
-- เมนูทุกเมนูต้องเป็นอาหารไทยที่มีจริง ทำได้จริง และปลอดภัย 100%
-- ต้องมี ingredients และ instructions ครบทุกเมนู โดยใช้ \\n แยกบรรทัด
-- อย่าลืมเรียกชื่อ คุณ{$userName} ในการตอบทุกครั้ง
-";
-
-
-/// ── ดึง API Key และ Model จากตาราง system_settings (แก้ไขเป็นรูปแบบ mysqli ให้ถูกต้อง) ──
-$setting_stmt = $conn->query("SELECT api_key, api_model FROM system_settings WHERE id = 1");
-
-if ($setting_stmt && $setting_stmt->num_rows > 0) {
-    $setting = $setting_stmt->fetch_assoc();
-    $apiKey = $setting['api_key'];
-    $apiModel = $setting['api_model']; 
-} else {
-    // กรณีหาข้อมูลในฐานข้อมูลไม่เจอ (กันเว็บพัง)
-    $apiKey = GEMINI_API_KEY;
-    $apiModel = 'gemini-3.1-flash-lite-preview';
-}
-
-// เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
-$url = "https://generativelanguage.googleapis.com/v1beta/models/{$apiModel}:generateContent?key=" . $apiKey;
-
-// 4. จัดรูปแบบข้อมูล (ล็อกคอเป็น JSON เพื่อความเสถียร)
-$data = [
-    "contents" => [[ "parts" => [[ "text" => $systemPrompt . "\nUser: " . $userMessage ]] ]],
-    "generationConfig" => [
-        "responseMimeType" => "application/json"
-    ]
-];
-
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-$response = curl_exec($ch);
-// รับ HTTP Code เพื่อเช็คสถานะการเชื่อมต่อ
-$httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-$responseData = json_decode($response, true);
-
-// เพิ่มการเช็ค Http Code เพื่อป้องกัน API เอ๋อแล้วเงียบหาย
-if ($httpcode == 200 && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
-    $rawText = $responseData['candidates'][0]['content']['parts'][0]['text'];
-    
-    // Clean JSON string (ดักจับ JSON ให้แม่นยำขึ้น ป้องกัน AI พิมพ์เกิน)
-    $cleanJson = str_replace(['```json', '```'], '', $rawText);
-    $cleanJson = trim($cleanJson);
-    
-    // ถ้า json_decode ไม่ผ่าน ให้ลองใช้ Regex ดึงเฉพาะปีกกา { ... } ออกมา
-    $parsedData = json_decode($cleanJson, true);
-    if (!$parsedData) {
-        preg_match('/\{.*\}/s', $cleanJson, $matches);
-        if (!empty($matches)) {
-             $parsedData = json_decode($matches[0], true);
-        }
-    }
-
-    if (!$parsedData) {
-        $parsedData = [
-            "chat_response" => $rawText,
-            "recommended_menus" => []
-        ];
-    }
-
-    if ($userId > 0) {
-        $menusToSave = $parsedData['recommended_menus'] ?? [];
-        
-        if (!empty($menusToSave)) {
-            $ins_menu_stmt = $conn->prepare("INSERT INTO ai_saved_menus (user_id, menu_name, calories, description) VALUES (?, ?, ?, ?)");
-            
-            // 🌟 แก้ไขคำสั่งเพิ่มคอลัมน์ ingredients แยกออกมาอย่างชัดเจน
-            $check_recipe = $conn->prepare("SELECT id FROM recipes WHERE TRIM(title) = ?");
-            $ins_recipe = $conn->prepare("INSERT INTO recipes (title, description, ingredients, instructions, calories, image) VALUES (?, ?, ?, ?, ?, ?)");
-
-            foreach ($menusToSave as $m) {
-                $mName = trim($m['name'] ?? 'เมนูอาหาร');
-                $mCal = (int)($m['calories'] ?? 0);
-                $mDesc = $m['desc'] ?? '';
-                $mIng = $m['ingredients'] ?? '';
-                $mInst = $m['instructions'] ?? '';
-                
-                // บันทึกลงตารางประวัติการแนะนำของ AI
-                if ($ins_menu_stmt) {
-                    $ins_menu_stmt->bind_param("isis", $userId, $mName, $mCal, $mDesc);
-                    $ins_menu_stmt->execute();
-                }
-                
-                // บันทึกลงคลังอาหารหลัก
-                if ($check_recipe) {
-                    $check_recipe->bind_param("s", $mName);
-                    $check_recipe->execute();
-                    $res = $check_recipe->get_result();
-                    
-                    if ($res && $res->num_rows === 0) {
-                        // สุ่มรูปภาพให้เมนูใหม่
-                        $randomImg = "https://loremflickr.com/800/500/healthy,food?lock=" . rand(1, 999999);
-                        
-                        if ($ins_recipe) {
-                            // 🌟 บันทึกแยกช่องกัน 100% ($mDesc ลงช่อง description, $mIng ลงช่อง ingredients)
-                            // ssssis = String 4 ตัว, Int 1 ตัว, String 1 ตัว
-                            $ins_recipe->bind_param("ssssis", $mName, $mDesc, $mIng, $mInst, $mCal, $randomImg);
-                            $ins_recipe->execute();
-                        }
-                    }
-                }
-            }
-        }
-        
-        // บันทึกประวัติแชทลง chat_logs
-        $finalMessageToSave = $parsedData['chat_response'];
-        if (!empty($menusToSave)) {
-            $finalMessageToSave .= '|||MENUS|||' . json_encode($menusToSave, JSON_UNESCAPED_UNICODE);
-        }
-        
-        $log_stmt = $conn->prepare("INSERT INTO chat_logs (user_id, sender, message) VALUES (?, 'ai', ?)");
-        if ($log_stmt) {
-            $log_stmt->bind_param("is", $userId, $finalMessageToSave);
-            $log_stmt->execute();
-        }
-    }
-
-    echo json_encode($parsedData);
-} else {
-    // ส่ง Error ให้ฝั่งหน้าเว็บทราบชัดเจน
-    $error_msg = isset($responseData['error']['message']) ? $responseData['error']['message'] : 'ระบบ AI ขัดข้องชั่วคราว (HTTP '.$httpcode.')';
-    echo json_encode([
-        'chat_response' => 'ขออภัยค่ะ มีข้อผิดพลาดจากเซิร์ฟเวอร์ AI: ' . $error_msg, 
-        'recommended_menus' => []
-    ]);
+    $history[] = [
+        'sender' => $row['sender'],
+        'message' => $msg_text,
+        'menus' => $menus_json
+    ];
 }
 ?>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เชฟ AI — FoodAI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+:root {
+  --g50:#f0fdf4;--g100:#dcfce7;--g200:#bbf7d0;--g400:#4ade80;
+  --g500:#22c55e;--g600:#16a34a;--g700:#15803d;
+  --t400:#2dd4bf;--t500:#14b8a6;
+  --bg:#f5f8f5;--card:#ffffff;--bdr:#e8f0e9;
+  --txt:#1a2e1a;--sub:#4b6b4e;--muted:#8da98f;
+  --sb-w:248px;--sb-bdr:#e5ede6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);display:flex;height:100vh;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(circle,#c8e6c9 1px,transparent 1px);background-size:28px 28px;opacity:.3;}
+
+/* ── Sidebar (shared) ── */
+.sidebar{width:var(--sb-w);height:100vh;background:#fff;border-right:1px solid var(--sb-bdr);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;box-shadow:4px 0 24px rgba(34,197,94,.06);}
+.sb-logo{padding:24px 22px 20px;border-bottom:1px solid var(--sb-bdr);display:flex;align-items:center;gap:11px;}
+.sb-logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--g500),var(--t500));display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(34,197,94,.35);flex-shrink:0;}
+.sb-logo-text{font-family:'Nunito',sans-serif;font-size:1.18rem;font-weight:800;color:var(--g700);letter-spacing:-.02em;line-height:1;}
+.sb-logo-sub{font-size:.6rem;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
+.sb-label{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:18px 22px 8px;}
+.sb-nav{padding:6px 12px;display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--sub);font-size:.82rem;font-weight:500;transition:background .18s,color .18s,transform .18s;}
+.nav-item:hover{background:var(--g50);color:var(--g700);transform:translateX(2px);}
+.nav-item.active{background:var(--g50);color:var(--g600);font-weight:600;box-shadow:inset 3px 0 0 var(--g500);}
+.nav-item.active .nav-icon-wrap{background:linear-gradient(135deg,var(--g500),var(--t500));color:white;box-shadow:0 3px 10px rgba(34,197,94,.38);}
+.nav-icon-wrap{width:34px;height:34px;border-radius:10px;background:var(--g50);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;transition:all .18s;color:var(--g600);}
+.nav-item:hover .nav-icon-wrap{background:var(--g100);border-color:var(--g200);}
+.nav-badge{margin-left:auto;background:var(--g500);color:white;font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:99px;}
+.nav-badge.orange{background:#f97316;}
+.sb-divider{height:1px;background:var(--sb-bdr);margin:6px 12px;}
+.sb-user{border-top:1px solid var(--sb-bdr);padding:16px;display:flex;align-items:center;gap:11px;background:var(--g50);flex-shrink:0;}
+.sb-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--g400),var(--t400));display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:800;color:white;flex-shrink:0;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(34,197,94,.3);}
+.sb-user-name{font-size:.78rem;font-weight:600;color:var(--txt);line-height:1.2;}
+.sb-logout{margin-left:auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.72rem;text-decoration:none;transition:all .18s;background:transparent;}
+.sb-logout:hover{background:#fee2e2;border-color:#fecaca;color:#dc2626;}
+
+/* Scroll container */
+.scroll-box { display:flex;flex-direction:column;gap:9px;max-height:360px;overflow-y:auto;padding-right:3px; }
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--g200);border-radius:99px; }
+
+/* ── Page shell ── */
+.page-wrap{margin-left:var(--sb-w);flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1;}
+
+/* ── Chat topbar ── */
+.chat-topbar{height:66px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--sb-bdr);display:flex;align-items:center;padding:0 1.75rem;gap:14px;flex-shrink:0;box-shadow:0 2px 12px rgba(34,197,94,.05);}
+.chef-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--g100),var(--g200));border:2px solid var(--g200);display:flex;align-items:center;justify-content:center;font-size:1.3rem;position:relative;flex-shrink:0;}
+.chef-online{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;background:var(--g500);border:2px solid white;}
+@keyframes livePulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(.65);opacity:.3;}}
+.chef-online{animation:livePulse 2s ease-in-out infinite;}
+.tb-back{width:36px;height:36px;border-radius:10px;background:white;border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:var(--sub);text-decoration:none;font-size:.8rem;transition:all .18s;flex-shrink:0;}
+.tb-back:hover{background:var(--g50);border-color:var(--g200);color:var(--g600);}
+
+/* ── Chat area ── */
+.chat-area{flex:1;overflow-y:auto;padding:24px 20px;display:flex;flex-direction:column;gap:0;}
+.chat-area::-webkit-scrollbar{width:4px;}
+.chat-area::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
+
+/* ── Bubbles ── */
+@keyframes bubblePop{from{opacity:0;transform:scale(.94) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.msg-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:16px;animation:bubblePop .3s cubic-bezier(.22,1,.36,1);}
+.msg-row.user { flex-direction: row; justify-content: flex-end; gap: 10px; }
+
+.bubble-ai{background:white;border:1px solid var(--bdr);border-radius:18px 18px 18px 4px;padding:14px 17px;max-width:75%;font-size:.85rem;line-height:1.72;color:var(--txt);box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.bubble-user { background: linear-gradient(135deg, var(--g500), var(--t500)); color: white; border-radius: 18px 18px 4px 18px; padding: 13px 17px; max-width: 75%; font-size: .85rem; line-height: 1.72; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2); }
+
+.msg-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
+.msg-avatar.ai{background:var(--g100);border:1.5px solid var(--g200);}
+.msg-avatar.user-av{background:linear-gradient(135deg,var(--g400),var(--t400));color:white;font-size:.72rem;font-weight:800;font-family:'Nunito',sans-serif;}
+
+/* Prose inside AI bubble */
+.bubble-ai strong{color:var(--g700);font-weight:700;}
+.bubble-ai ul{list-style:disc;padding-left:1.4rem;margin:.4rem 0;}
+.bubble-ai ol{list-style:decimal;padding-left:1.4rem;margin:.4rem 0;}
+.bubble-ai p{margin-bottom:.4rem;}
+
+/* Loading dots */
+@keyframes dot{0%,80%,100%{transform:scale(0);}40%{transform:scale(1);}}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--g400);display:inline-block;animation:dot 1.2s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+
+/* Menu cards */
+.menu-suggest{background:var(--g50);border:1.5px solid var(--g200);border-radius:15px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:box-shadow .18s,border-color .18s;animation:bubblePop .3s cubic-bezier(.22,1,.36,1);}
+.menu-suggest:hover{box-shadow:0 4px 16px rgba(34,197,94,.12);border-color:var(--g400);}
+.menu-suggest-name{font-size:.85rem;font-weight:600;color:var(--g700);}
+.menu-suggest-meta{font-size:.72rem;color:var(--muted);margin-top:3px;}
+.save-btn{flex-shrink:0;background:white;border:1.5px solid var(--g200);color:var(--g600);font-size:.7rem;font-weight:700;padding:7px 14px;border-radius:10px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:5px;font-family:'Kanit',sans-serif;}
+.save-btn.saved{background:var(--g500);color:white;border-color:var(--g500);pointer-events:none;}
+
+/* Quick chips */
+.chips-row{display:flex;flex-wrap:wrap;gap:7px;padding:10px 20px 4px;flex-shrink:0;}
+.chip{background:white;border:1.5px solid var(--bdr);border-radius:99px;padding:6px 14px;font-size:.73rem;font-weight:500;color:var(--sub);cursor:pointer;transition:all .18s;font-family:'Kanit',sans-serif;}
+.chip:hover{border-color:var(--g400);background:var(--g50);color:var(--g700);}
+
+/* Input area */
+.input-bar{padding:12px 20px 16px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-top:1px solid var(--sb-bdr);flex-shrink:0;}
+.input-wrap{background:white;border:2px solid var(--bdr);border-radius:16px;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 16px;transition:border-color .18s,box-shadow .18s;}
+.input-wrap:focus-within{border-color:var(--g400);box-shadow:0 0 0 3px rgba(74,222,128,.12);}
+.chat-input{flex:1;border:none;outline:none;background:transparent;font-family:'Kanit',sans-serif;font-size:.88rem;color:var(--txt);}
+.chat-input::placeholder{color:var(--muted);}
+.send-btn{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--g500),var(--t500));border:none;color:white;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .18s,box-shadow .18s;flex-shrink:0;box-shadow:0 3px 10px rgba(34,197,94,.35);}
+.send-btn:hover{opacity:.88;box-shadow:0 5px 16px rgba(34,197,94,.42);}
+.send-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+@media (max-width: 1024px) {
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .sidebar.show { transform: translateX(0); }
+  .page-wrap { margin-left: 0 !important; }
+}
+</style>
+</head>
+<body>
+
+<?php include '../includes/sidebar.php' ?>
+
+<div class="page-wrap">
+
+  <div class="chat-topbar">
+    <a href="dashboard.php" class="tb-back"><i class="fas fa-arrow-left"></i></a>
+    <div class="chef-avatar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chef-hat" style="color: #c1c1c1;">
+        <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+        <line x1="6" x2="18" y1="17" y2="17"/>
+      </svg>
+      <span class="chef-online"></span>
+    </div>
+    <div>
+      <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt);">เชฟ AI อัจฉริยะ</div>
+      <div style="font-size:.7rem;color:var(--g600);font-weight:500;">พร้อมให้บริการคุณ <?= htmlspecialchars($user_name) ?></div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:6px 12px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:var(--g500);display:inline-block;animation:livePulse 2s ease-in-out infinite;"></span>
+      <span style="font-size:.68rem;font-weight:700;color:var(--g600);">Online</span>
+    </div>
+  </div>
+
+  <div class="chat-area" id="chatArea">
+    <div class="msg-row">
+      <div class="msg-avatar ai">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chef-hat" style="color: #c1c1c1;">
+          <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+          <line x1="6" x2="18" y1="17" y2="17"/>
+        </svg></div>
+      <div class="bubble-ai">
+        สวัสดีครับ! วันนี้อยากทานอะไร หรือให้เชฟช่วยคิดเมนูสำหรับ 1 วันก็ได้นะครับ (เชฟจะเช็คโรคประจำตัวและอาหารที่แพ้ในฐานข้อมูลให้ด้วยครับ)
+      </div>
+    </div>
+  </div>
+
+  <div class="chips-row" id="chipsRow">
+    <span class="chip" onclick="sendChip(this)">จัดเมนู 3 มื้อ + 1 ว่าง สำหรับวันนี้</span>
+    <span class="chip" onclick="sendChip(this)">เมนูไก่วันนี้</span>
+    <span class="chip" onclick="sendChip(this)">เมนูสุขภาพที่ฉันกินได้</span>
+  </div>
+
+  <div class="input-bar">
+    <div class="input-wrap">
+      <input type="text" class="chat-input" id="aiQuery" placeholder="พิมพ์ความต้องการ เช่น 'จัดเมนู 1 วันให้หน่อย'..." autocomplete="off">
+      <button class="send-btn" id="sendBtn" onclick="sendUserMessage()">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const chatArea   = document.getElementById('chatArea');
+const inputField = document.getElementById('aiQuery');
+const sendBtn    = document.getElementById('sendBtn');
+const chipsRow   = document.getElementById('chipsRow');
+const initials   = <?= json_encode($initials ?: 'U') ?>;
+const profileImage = <?= json_encode($profile_image) ?>;
+const chatHistory = <?= json_encode($history) ?>;
+const urlParams  = new URLSearchParams(window.location.search);
+const autoMessage = urlParams.get('ingredients');
+
+function aiAvatar() { return `<div class="msg-avatar ai">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chef-hat" style="color: #c1c1c1;">
+        <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+        <line x1="6" x2="18" y1="17" y2="17"/>
+      </svg></div>`; }
+
+function userAvatar() { 
+  if (profileImage) {
+    return `<div class="msg-avatar" style="overflow:hidden; padding:0; border:1px solid var(--bdr);"><img src="../public/uploads/avatars/${profileImage}?t=<?= time() ?>" alt="User" style="width:100%;height:100%;object-fit:cover;"></div>`;
+  } else {
+    return `<div class="msg-avatar user-av">${initials}</div>`; 
+  }
+}
+
+function renderMessage(sender, text, animate = false, menus = null) {
+  const rowEl = document.createElement('div');
+  rowEl.className = 'msg-row' + (sender === 'user' ? ' user' : '');
+  
+  if (sender === 'user') {
+    rowEl.innerHTML = `<div class="bubble-user">${escapeHtml(text)}</div>${userAvatar()}`;
+  } else {
+    rowEl.innerHTML = `
+      ${aiAvatar()}
+      <div>
+        <div class="bubble-ai prose">${marked.parse(text)}</div>
+      </div>
+    `;
+  }
+  
+  chatArea.appendChild(rowEl);
+
+  // ── ส่วนสร้างการ์ดเมนูโดยมีป้ายบอกว่าเซฟอัตโนมัติแล้ว ──
+  if (menus && menus.length > 0) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'margin-left:42px;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-width:75%;';
+      
+      menus.forEach(menu => {
+        const card = document.createElement('div');
+        card.className = 'menu-suggest';
+        card.innerHTML = `
+          <div style="min-width:0;">
+            <div class="menu-suggest-name"><i class="fas fa-utensils" style="color: #22c55e;"></i> ${escapeHtml(menu.name)}</div>
+            <div class="menu-suggest-meta"><i class="bi bi-fire" style="color: #ff5722;"></i> ${menu.calories} kcal &bull; ${escapeHtml(menu.desc)}</div>
+          </div>
+          <div class="save-btn saved" style="cursor:default;">
+            <i class="fas fa-check"></i> บันทึกอัตโนมัติแล้ว
+          </div>`;
+        wrap.appendChild(card);
+      });
+      chatArea.appendChild(wrap);
+  }
+
+  scrollBottom();
+}
+
+function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function scrollBottom() { chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' }); }
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // โหลดประวัติแชทพร้อมปุ่มเมนู
+  chatHistory.forEach(c => renderMessage(c.sender, c.message, false, c.menus));
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  if (autoMessage) {
+    inputField.value = autoMessage; 
+    sendUserMessage();             
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+});
+
+async function sendUserMessage() {
+  const text = inputField.value.trim();
+  if (!text) return;
+
+  chipsRow.style.display = 'none';
+  renderMessage('user', text, true);
+  inputField.value = '';
+  sendBtn.disabled = true;
+
+  const loadId = 'ld-' + Date.now();
+  const loadRow = document.createElement('div');
+  loadRow.id = loadId;
+  loadRow.className = 'msg-row';
+  loadRow.innerHTML = `${aiAvatar()}<div class="bubble-ai" style="display:flex;align-items:center;gap:6px;padding:14px 18px;">
+    <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+  </div>`;
+  chatArea.appendChild(loadRow);
+  scrollBottom();
+
+  try {
+    const res  = await fetch('../api/api_chat.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    document.getElementById(loadId)?.remove();
+
+    renderMessage('ai', data.chat_response, true, data.recommended_menus);
+
+  } catch (e) {
+    document.getElementById(loadId)?.remove();
+    renderMessage('ai', 'ขออภัย เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้งครับ');
+  } finally {
+    sendBtn.disabled = false;
+    inputField.focus();
+  }
+}
+
+function sendChip(el) {
+  inputField.value = el.textContent.replace(/^[^\s]+\s/,'').trim();
+  sendUserMessage();
+}
+
+inputField.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendUserMessage(); } });
+</script>
+<script>
+// เช็คคำทักทายตอนเช้าเมื่อเปิดหน้าเว็บ
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('api_chat.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_greeting' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // ถ้าระบบส่งคำทักทายมา (แปลว่าเพิ่งเข้ามาครั้งแรกของวัน) ให้โหลดหน้าใหม่เพื่อแสดงแชท
+        if (data.chat_response && data.chat_response !== "") {
+            window.location.reload(); 
+        }
+    })
+    .catch(error => console.error('Error fetching greeting:', error));
+});
+</script>
+</body>
+</html>
