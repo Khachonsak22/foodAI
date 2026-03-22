@@ -18,7 +18,7 @@ $userId = $_SESSION['user_id'] ?? 0;
 // ─── เพิ่มใหม่: ดึงชื่อผู้ใช้ ───
 $userName = 'ผู้ใช้งาน';
 if ($userId > 0) {
-    $u_stmt = $conn->prepare("SELECT first_name FROM users WHERE id = ?");
+    $u_stmt = $conn->prepare("SELECT username FROM users WHERE id = ?");
     $u_stmt->bind_param("i", $userId);
     $u_stmt->execute();
     if ($u_row = $u_stmt->get_result()->fetch_assoc()) {
