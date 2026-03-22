@@ -780,7 +780,7 @@ main {
         <?= $greet_sub ?> <?= $greet_icon ?>
       </p>
       <h1 style="font-family:'Nunito',sans-serif;font-size:1.7rem;font-weight:800;color:var(--txt);line-height:1.1;">
-        <?= $greet_time ?>, <span style="color:var(--g600);">คุณ <?php echo htmlspecialchars($username); ?>!</span>
+        <?= $greet_time ?>, <span style="color:var(--g600);">คุณ <?php echo htmlspecialchars($username); ?></span>
       </h1>
       <div class="gline" style="background:var(--g500);height:4px;border-radius:2px;width:52px;margin-top:10px;"></div>
     </div>
@@ -1184,7 +1184,7 @@ main {
         <div class="ai-modal-body">
             <h3 class="ai-modal-title">ให้ AI จัดมื้ออาหารให้คุณไหม?</h3>
             <p class="ai-modal-desc">
-                หมดปัญหา "วันนี้กินอะไรดี?" ให้ <b>AI Chef</b> วิเคราะห์สุขภาพและโรคประจำตัวของคุณ เพื่อจัดตารางเมนูสุดพิเศษในคลิกเดียว!
+                หมดปัญหา "วันนี้กินอะไรดี?" ให้ <b>AI Chef</b> วิเคราะห์สุขภาพและโรคประจำตัวของคุณ เพื่อจัดตารางเมนูสุดพิเศษในคลิกเดียว
             </p>
             <a href="ai_chef.php" class="ai-btn-primary">
                 <i class="fas fa-magic"></i> เริ่มคุยกับ AI Chef
