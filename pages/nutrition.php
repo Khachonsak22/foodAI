@@ -41,15 +41,27 @@ $daily_data = [];
 for ($i = (int)$range - 1; $i >= 0; $i--) {
     $d = date('Y-m-d', strtotime("-$i days"));
     
-    // AI menus
-    $s1 = $conn->prepare("SELECT COALESCE(SUM(calories),0) as c FROM ai_saved_menus WHERE user_id=? AND DATE(created_at)=?");
-    $s1->bind_param("is", $user_id, $d);
+    // 🌟 แก้ไข 1: แคลอรี่ที่ "กดบันทึกกินเอง" และเป็นเมนูที่ "มาจาก AI"
+    $s1 = $conn->prepare("
+        SELECT COALESCE(SUM(r.calories),0) as c 
+        FROM meal_logs ml 
+        JOIN recipes r ON ml.recipe_id = r.id 
+        WHERE ml.user_id = ? AND DATE(ml.logged_at) = ?
+        AND r.title IN (SELECT menu_name FROM ai_saved_menus WHERE user_id = ?)
+    ");
+    $s1->bind_param("isi", $user_id, $d, $user_id);
     $s1->execute();
     $ai_cal = (int)$s1->get_result()->fetch_assoc()['c'];
     
-    // Recipe logs
-    $s2 = $conn->prepare("SELECT COALESCE(SUM(r.calories),0) as c FROM meal_logs ml JOIN recipes r ON ml.recipe_id=r.id WHERE ml.user_id=? AND DATE(ml.logged_at)=?");
-    $s2->bind_param("is", $user_id, $d);
+    // 🌟 แก้ไข 2: แคลอรี่ที่ "กดบันทึกกินเอง" และเป็น "เมนูทั่วไปของระบบ"
+    $s2 = $conn->prepare("
+        SELECT COALESCE(SUM(r.calories),0) as c 
+        FROM meal_logs ml 
+        JOIN recipes r ON ml.recipe_id = r.id 
+        WHERE ml.user_id = ? AND DATE(ml.logged_at) = ?
+        AND r.title NOT IN (SELECT menu_name FROM ai_saved_menus WHERE user_id = ?)
+    ");
+    $s2->bind_param("isi", $user_id, $d, $user_id);
     $s2->execute();
     $rec_cal = (int)$s2->get_result()->fetch_assoc()['c'];
     
@@ -103,15 +115,13 @@ $top_stmt->execute();
 $top_recipes = $top_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 /* ── Consistency score (days logged in last 30) ── */
+// 🌟 แก้ไข 3: วัดความสม่ำเสมอเฉพาะวันที่ "กดบันทึกการกิน" เท่านั้น
 $consistency_stmt = $conn->prepare(
-    "SELECT COUNT(DISTINCT DATE(created_at)) as days_logged
-     FROM (
-         SELECT created_at FROM ai_saved_menus WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-         UNION ALL
-         SELECT logged_at FROM meal_logs WHERE user_id = ? AND logged_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-     ) as combined"
+    "SELECT COUNT(DISTINCT DATE(logged_at)) as days_logged
+     FROM meal_logs 
+     WHERE user_id = ? AND logged_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
 );
-$consistency_stmt->bind_param("ii", $user_id, $user_id);
+$consistency_stmt->bind_param("i", $user_id);
 $consistency_stmt->execute();
 $days_logged = (int)$consistency_stmt->get_result()->fetch_assoc()['days_logged'];
 $consistency_pct = round($days_logged / 30 * 100);
@@ -160,7 +170,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 main { 
     padding: 2rem 2.5rem 3.5rem; 
     width: 100%; 
-    max-width: 100%; /* เปลี่ยนจาก 1280px เป็น 100% */
+    max-width: 100%; 
     margin: 0 auto; 
 }
 
@@ -270,7 +280,6 @@ main {
 
 <?php include '../includes/sidebar.php' ?>
 
-<!-- MAIN -->
 <div class="page-wrap">
 
   <header class="topbar">
@@ -290,7 +299,6 @@ main {
 
   <main style="padding:2rem 2.5rem 3.5rem;max-width:1280px;width:100%;">
 
-    <!-- HEADER -->
     <div class="rv rv1" style="margin-bottom:1.8rem;">
       <p style="font-size:.72rem;color:var(--muted);margin-bottom:3px;">การวิเคราะห์</p>
       <h1 style="font-family:'Nunito',sans-serif;font-size:1.6rem;font-weight:800;color:var(--txt);line-height:1.1;">
@@ -299,7 +307,6 @@ main {
       <div class="gline" style="width:50px;margin-top:10px;"></div>
     </div>
 
-    <!-- ROW 1 — STATS CARDS -->
     <div class="rv rv2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:2rem;">
       
       <div class="stat-card">
@@ -328,21 +335,19 @@ main {
 
     </div>
 
-    <!-- ROW 2 — CHART + DONUT -->
     <div class="rv rv3" style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;margin-bottom:2rem;">
 
-      <!-- Daily Calorie Chart -->
       <div class="card" style="padding:24px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-          <h2 class="stitle"><i class="bi bi-graph-up" style="color: #22c55e;"></i> แคลอรี่รายวัน</h2>
+          <h2 class="stitle"><i class="bi bi-graph-up" style="color: #22c55e;"></i> แคลอรี่ที่บันทึกรายวัน</h2>
           <div style="display:flex;gap:12px;font-size:.68rem;">
             <div style="display:flex;align-items:center;gap:5px;">
               <div style="width:10px;height:10px;border-radius:2px;background:var(--t500);"></div>
-              <span style="color:var(--muted);">AI</span>
+              <span style="color:var(--muted);">เมนูจาก AI</span>
             </div>
             <div style="display:flex;align-items:center;gap:5px;">
               <div style="width:10px;height:10px;border-radius:2px;background:var(--g500);"></div>
-              <span style="color:var(--muted);">สูตร</span>
+              <span style="color:var(--muted);">เมนูทั่วไป</span>
             </div>
           </div>
         </div>
@@ -358,6 +363,7 @@ main {
               <?php if ($dd['rec_cal'] > 0): ?>
               <div class="bar-stack" style="height:<?= $rec_h ?>px;background:var(--g500);"></div>
               <?php endif; ?>
+              
               <?php if ($dd['ai_cal'] > 0): ?>
               <div class="bar-stack" style="height:<?= $ai_h ?>px;background:var(--t500);"></div>
               <?php endif; ?>
@@ -373,7 +379,6 @@ main {
         </div>
       </div>
 
-      <!-- Meal Type Breakdown -->
       <div class="card" style="padding:24px;">
         <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-utensils" style="color: #22c55e;"></i> สัดส่วนมื้ออาหาร</h2>
         <p style="font-size:.7rem;color:var(--muted);margin-bottom:16px;">7 วันที่ผ่านมา</p>
@@ -455,10 +460,8 @@ main {
 
     </div>
 
-    <!-- ROW 3 — RECOMMENDATIONS + TOP RECIPES -->
     <div class="rv rv4" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:2rem;">
 
-      <!-- Health Recommendations -->
       <div class="card" style="padding:24px;">
         <h2 class="stitle" style="margin-bottom:18px;">💡 คำแนะนำสุขภาพ</h2>
         <div style="display:flex;flex-direction:column;gap:12px;">
@@ -487,7 +490,6 @@ main {
         </div>
       </div>
 
-      <!-- Top Consumed Recipes -->
       <div class="card" style="padding:24px;">
         <h2 class="stitle" style="margin-bottom:18px;"><i class="bi bi-fire" style="color: #ff5722;"></i> เมนูที่บันทึกบ่อย</h2>
         <p style="font-size:.7rem;color:var(--muted);margin-bottom:14px;">30 วันที่ผ่านมา</p>
@@ -522,9 +524,8 @@ main {
 
     </div>
 
-    <!-- ROW 4 — INSIGHTS -->
     <div class="rv rv5 card" style="padding:28px;">
-      <h2 class="stitle" style="margin-bottom:18px;">📋 สรุปภาพรวม</h2>
+      <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-clipboard-list"></i> สรุปภาพรวม</h2>
       
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
         
