@@ -278,8 +278,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
         <div>
           <div style="font-size:.88rem;font-weight:600;color:#dc2626;">System Information</div>
           <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">
-            PHP <?= phpversion() ?> • MySQL <?= $conn->server_info ?> • Admin: <?= htmlspecialchars($admin_data['email']) ?>
-          </div>
+            PHP <?= phpversion() ?> • MySQL <?= $conn->server_info ?> • Admin: <?= htmlspecialchars($admin_data['email'] ?? $admin_data['username'] ?? 'Admin') ?>
         </div>
       </div>
     </div>
