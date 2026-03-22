@@ -245,8 +245,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
           </div>
 
           <div>
-            <label style="font-size:.88rem;font-weight:600;display:block;margin-bottom:6px;">AI Model (รุ่นของสมองกล):</label>
+            <label style="font-size:.88rem;font-weight:600;display:block;margin-bottom:6px;">AI Model:</label>
             <select name="api_model" class="custom-input" required>
+                <option value="gemini-3.1-flash-lite-preview" <?php if($setting['api_model'] == 'gemini-3.1-flash-lite-preview') echo 'selected'; ?>>Gemini 3.1 Flash Lite Preview (พรีวิว - เบาและรวดเร็ว)</option>
                 <option value="gemini-2.5-flash" <?php if($setting['api_model'] == 'gemini-2.5-flash') echo 'selected'; ?>>Gemini 2.5 Flash (แนะนำ - รวดเร็วและฉลาดที่สุด)</option>
                 <option value="gemini-2.0-flash" <?php if($setting['api_model'] == 'gemini-2.0-flash') echo 'selected'; ?>>Gemini 2.0 Flash (เสถียร)</option>
                 <option value="gemini-1.5-flash" <?php if($setting['api_model'] == 'gemini-1.5-flash') echo 'selected'; ?>>Gemini 1.5 Flash (รุ่นเก่า)</option>

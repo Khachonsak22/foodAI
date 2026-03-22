@@ -182,7 +182,7 @@ if ($setting_stmt && $setting_stmt->num_rows > 0) {
 } else {
     // กรณีหาข้อมูลในฐานข้อมูลไม่เจอ (กันเว็บพัง)
     $apiKey = GEMINI_API_KEY;
-    $apiModel = 'gemini-2.5-flash';
+    $apiModel = 'gemini-3.1-flash-lite-preview';
 }
 
 // เอาตัวแปร $apiModel เข้าไปเสียบใน URL แทนการพิมพ์ชื่อโมเดลตรงๆ
