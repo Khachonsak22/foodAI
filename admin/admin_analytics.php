@@ -2,6 +2,8 @@
 session_start();
 include '../config/connect.php';
 if (!isset($_SESSION['user_id'])) { header("Location: ../pages/login.php"); exit(); }
+
+$user_id = $_SESSION['user_id'];
 $admin_stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
 $admin_stmt->bind_param("i", $user_id);
 $admin_stmt->execute();
