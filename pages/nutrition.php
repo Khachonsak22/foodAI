@@ -515,7 +515,7 @@ main {
         </div>
         <?php else: ?>
         <div style="text-align:center;padding:2rem 1rem;border:2px dashed var(--g200);border-radius:14px;">
-          <div style="font-size:2rem;opacity:.2;margin-bottom:10px;">📊</div>
+          <div style="font-size:2rem;opacity:.2;margin-bottom:10px;"><i class="bi bi-bar-chart-line-fill" style="color: #22c55e;"></i></div>
           <p style="font-size:.82rem;color:var(--muted);">ยังไม่มีข้อมูลสถิติ</p>
           <p style="font-size:.72rem;color:var(--muted);margin-top:4px;">เริ่มบันทึกเมนูอาหารของคุณ</p>
         </div>
@@ -525,7 +525,7 @@ main {
     </div>
 
     <div class="rv rv5 card" style="padding:28px;">
-      <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-clipboard-list"></i> สรุปภาพรวม</h2>
+      <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-clipboard-list" style="color: #22c55e;"></i> สรุปภาพรวม</h2>
       
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
         
