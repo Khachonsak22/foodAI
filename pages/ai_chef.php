@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id   = $_SESSION['user_id'];
 $user_name = $_SESSION['first_name'] ?? 'คุณลูกค้า';
 
-// ── แก้ไข: ดึงข้อมูลชื่อ นามสกุล และ รูปโปรไฟล์ จากฐานข้อมูล ──
+// ── ดึงข้อมูลชื่อ นามสกุล และ รูปโปรไฟล์ จากฐานข้อมูล ──
 $sql  = "SELECT first_name, last_name, profile_image FROM users WHERE id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $user_id);
@@ -34,7 +34,7 @@ if (!empty($profile_image) && file_exists("../public/uploads/avatars/" . $profil
     $profile_image_url = "../public/uploads/avatars/" . htmlspecialchars($profile_image) . "?t=" . time();
 }
 
-// ── แก้ไขการดึงประวัติแชทให้แยกระหว่าง "ข้อความ" และ "ข้อมูลเมนูอาหาร" ──
+// ── การดึงประวัติแชทให้แยกระหว่าง "ข้อความ" และ "ข้อมูลเมนูอาหาร" ──
 $history   = [];
 $chat_sql  = "SELECT sender, message FROM chat_logs WHERE user_id = ? ORDER BY id ASC";
 $chat_stmt = $conn->prepare($chat_sql);
@@ -173,10 +173,44 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .send-btn:hover{opacity:.88;box-shadow:0 5px 16px rgba(34,197,94,.42);}
 .send-btn:disabled{opacity:.5;cursor:not-allowed;}
 
+/* ── 🌟 สไตล์ปุ่ม Hamburger Menu (ใหม่) ── */
+.menu-toggle {
+  display: none;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: white; border: 1px solid var(--bdr);
+  align-items: center; justify-content: center;
+  color: var(--sub); text-decoration: none;
+  font-size: 0.9rem; cursor: pointer; transition: all .18s; flex-shrink: 0;
+}
+.menu-toggle:hover { background: var(--g50); border-color: var(--g200); color: var(--g600); }
+
+/* ── 🌟 ปรับแต่งสำหรับหน้าจอมือถือ (Mobile Responsive) ── */
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.show { transform: translateX(0); }
   .page-wrap { margin-left: 0 !important; }
+  .menu-toggle { display: flex; } /* แสดงปุ่ม Hamburger บนจอเล็ก */
+}
+
+@media (max-width: 768px) {
+  .chat-topbar { padding: 0 1rem; gap: 10px; }
+  .chef-avatar { width: 38px; height: 38px; }
+  .chat-area { padding: 16px 12px; }
+  .bubble-ai, .bubble-user { max-width: 88%; font-size: .8rem; padding: 12px 14px; }
+  .chips-row { padding: 10px 12px 4px; }
+  .chip { padding: 5px 12px; font-size: .7rem; }
+  .input-bar { padding: 10px 12px 12px; }
+  
+  /* ให้การ์ดเมนูเรียงเป็นแนวตั้งบนมือถือเพื่อให้กดยาวเต็มจอ */
+  .menu-wrap-mobile { max-width: 90% !important; margin-left: 36px !important; }
+  .menu-suggest { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .save-btn { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .bubble-ai, .bubble-user { max-width: 94%; }
+  .chat-topbar > div:nth-child(3) > div:first-child { font-size: .85rem; }
+  .chat-topbar > div:last-child { display: none; } /* ซ่อนสถานะ Online ถ้าจอเล็กไป */
 }
 </style>
 </head>
@@ -187,6 +221,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 <div class="page-wrap">
 
   <div class="chat-topbar">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
+      <i class="fas fa-bars"></i>
+    </button>
     <a href="dashboard.php" class="tb-back"><i class="fas fa-arrow-left"></i></a>
     <div class="chef-avatar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chef-hat" style="color: #c1c1c1;">
@@ -213,7 +250,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
           <line x1="6" x2="18" y1="17" y2="17"/>
         </svg></div>
       <div class="bubble-ai">
-        สวัสดีครับ วันนี้อยากทานอะไร หรือให้เชฟช่วยคิดเมนูสำหรับ 1 วันก็ได้นะครับ (เชฟจะเช็คโรคประจำตัวและอาหารที่แพ้ในฐานข้อมูลให้ด้วยครับ)
+        สวัสดีครับ! วันนี้อยากทานอะไร หรือให้เชฟช่วยคิดเมนูสำหรับ 1 วันก็ได้นะครับ (เชฟจะเช็คโรคประจำตัวและอาหารที่แพ้ในฐานข้อมูลให้ด้วยครับ)
       </div>
     </div>
   </div>
@@ -241,7 +278,7 @@ const inputField = document.getElementById('aiQuery');
 const sendBtn    = document.getElementById('sendBtn');
 const chipsRow   = document.getElementById('chipsRow');
 
-// ── แก้ไข: ดึงข้อมูล Initial และ Profile Image URL มาใช้งานใน JS ──
+// ดึงข้อมูล Initial และ Profile Image URL มาใช้งานใน JS
 const initials        = <?= json_encode($initials ?: 'U') ?>;
 const profileImageUrl = <?= json_encode($profile_image_url) ?>;
 
@@ -257,7 +294,7 @@ function aiAvatar() {
       </svg></div>`; 
 }
 
-// ── แก้ไข: ฟังก์ชันแสดงรูปโปรไฟล์ของ User ในกล่องแชท ──
+// ── ฟังก์ชันแสดงรูปโปรไฟล์ของ User ในกล่องแชท ──
 function userAvatar() { 
   if (profileImageUrl) {
     return `<div class="msg-avatar user-av" style="overflow:hidden; padding:0;"><img src="${profileImageUrl}" style="width:100%;height:100%;object-fit:cover;" alt="User"></div>`;
@@ -282,16 +319,18 @@ function renderMessage(sender, text, animate = false, menus = null) {
   
   chatArea.appendChild(rowEl);
 
-  // ── ส่วนสร้างการ์ดเมนูโดยมีป้ายบอกว่าเซฟอัตโนมัติแล้ว ──
+  // ส่วนสร้างการ์ดเมนูโดยมีป้ายบอกว่าเซฟอัตโนมัติแล้ว
   if (menus && menus.length > 0) {
       const wrap = document.createElement('div');
+      // 🌟 เพิ่มคลาส menu-wrap-mobile เพื่อให้กล่องขยายในมือถือได้
+      wrap.className = window.innerWidth <= 768 ? 'menu-wrap-mobile' : '';
       wrap.style.cssText = 'margin-left:42px;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-width:75%;';
       
       menus.forEach(menu => {
         const card = document.createElement('div');
         card.className = 'menu-suggest';
         card.innerHTML = `
-          <div style="min-width:0;">
+          <div style="min-width:0; width:100%;">
             <div class="menu-suggest-name"><i class="fas fa-utensils" style="color: #22c55e;"></i> ${escapeHtml(menu.name)}</div>
             <div class="menu-suggest-meta"><i class="bi bi-fire" style="color: #ff5722;"></i> ${menu.calories} kcal &bull; ${escapeHtml(menu.desc)}</div>
           </div>

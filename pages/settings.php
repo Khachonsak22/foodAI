@@ -105,17 +105,29 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .info-box h4{font-size:.82rem;font-weight:700;color:var(--g700);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
 .info-box p{font-size:.75rem;color:var(--sub);line-height:1.6;}
 
-/* Responsive */
+/* ── 🌟 Responsive CSS (รองรับมือถือและทุกหน้าจอ) ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
+
 @media (max-width: 1024px){
-  .page-wrap{margin-left:0;}
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .sidebar.show { transform: translateX(0); }
+  .page-wrap{margin-left:0 !important;}
   .form-row{grid-template-columns:1fr;}
+  .menu-toggle { display: flex; }
 }
 
 @media (max-width: 768px){
+  main { padding: 1.5rem 1.2rem 3rem !important; }
   .card{padding:24px 20px;}
-  .topbar{padding:0 1rem;}
+  .topbar{padding:0 1.5rem;}
   .avatar-upload{width:120px;height:120px;}
   .avatar-preview{width:120px;height:120px;font-size:2rem;}
+}
+
+@media (max-width: 480px){
+  .topbar{padding:0 1rem;}
+  .action-btns-grid { grid-template-columns: 1fr !important; } /* ให้ปุ่มแอคชั่นเรียงเป็นแนวตั้งบนมือถือ */
+  .rv1 h1 { font-size: 1.5rem !important; }
 }
 
 ::-webkit-scrollbar{width:4px;}
@@ -130,6 +142,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 <div class="page-wrap">
 
   <header class="topbar">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
+      <i class="fas fa-bars"></i>
+    </button>
     <a href="dashboard.php" class="tb-back"><i class="fas fa-arrow-left"></i></a>
     <div>
       <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt);">ตั้งค่าบัญชี</div>
@@ -242,7 +257,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
           </label>
           <input type="date" name="birth_date" value="<?= htmlspecialchars($birth_date) ?>" class="form-input">
         </div>
-        
+
+        <!-- บันทึก -->
         <button type="submit" class="btn-primary">
           <i class="fas fa-save" style="margin-right:8px;"></i> บันทึกการเปลี่ยนแปลง
         </button>
@@ -250,8 +266,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
       <div class="divider"></div>
 
-      <!-- Action Buttons -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="action-btns-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <a href="forgot_password.php" class="btn-secondary">
           <i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน
         </a>

@@ -166,7 +166,6 @@ $max_chart = max(array_column($daily_data, 'total') ?: [1]);
 body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(circle,#c8e6c9 1px,transparent 1px);background-size:28px 28px;opacity:.35;}
 
-/* ปรับให้ขยายตามหน้าจอ แต่ยังคงมีระยะห่างขอบ (Padding) เพื่อความสวยงาม */
 main { 
     padding: 2rem 2.5rem 3.5rem; 
     width: 100%; 
@@ -250,29 +249,29 @@ main {
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
 
-/* ── สไตล์ปุ่ม Hamburger Menu ── */
-.menu-toggle {
-  display: none;
-  width: 38px; height: 38px; border-radius: 11px;
-  background: white; border: 1px solid var(--bdr);
-  align-items: center; justify-content: center;
-  color: var(--sub); font-size: 0.9rem; cursor: pointer;
-}
-/* ── การจัดการ Layout บนมือถือ (จอเล็กกว่า 1024px) ── */
+/* ── 🌟 Responsive CSS (รองรับมือถือและทุกหน้าจอ) ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
+
 @media (max-width: 1024px) {
-  .sidebar {
-    transform: translateX(-100%); /* ซ่อน Sidebar ออกไปด้านซ้าย */
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .sidebar.show {
-    transform: translateX(0); /* เลื่อน Sidebar กลับเข้ามาเมื่อมีคลาส .show */
-  }
-  .page-wrap {
-    margin-left: 0 !important; /* ให้เนื้อหาหลักขยายเต็มจอ */
-  }
-  .menu-toggle {
-    display: flex; /* แสดงปุ่มเมนูบนมือถือ */
-  }
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .sidebar.show { transform: translateX(0); }
+  .page-wrap { margin-left: 0 !important; }
+  .menu-toggle { display: flex; }
+  .rv3, .rv4 { grid-template-columns: 1fr !important; } /* กราฟแท่ง, สัดส่วนมื้ออาหาร เรียงแนวตั้งบนแท็บเล็ต */
+}
+
+@media (max-width: 768px) {
+  main { padding: 1.5rem 1.2rem 3rem !important; }
+  .topbar { padding: 0 1.5rem; }
+  .rv2 { grid-template-columns: repeat(2, 1fr) !important; } /* กล่องสถิติ 4 อัน ปรับเป็นแถวละ 2 กล่อง */
+  .rv5 > div { grid-template-columns: 1fr !important; } /* สรุปภาพรวมด้านล่าง 3 กล่อง ปรับเรียงแนวตั้ง 1 แถว */
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 0 1rem; }
+  .rv2 { grid-template-columns: 1fr !important; } /* กล่องสถิติเรียงแนวตั้ง 1 กล่องต่อแถว บนมือถือเล็กสุด */
+  .range-tabs { gap: 2px; }
+  .range-tab { padding: 4px 10px; font-size: .7rem; } /* ปรับขนาดปุ่มวันที่ให้เล็กลงไม่ให้เบียดจอ */
 }
 </style>
 </head>
@@ -283,6 +282,9 @@ main {
 <div class="page-wrap">
 
   <header class="topbar">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
+      <i class="fas fa-bars"></i>
+    </button>
     <a href="dashboard.php" class="tb-back"><i class="fas fa-arrow-left"></i></a>
     <div>
       <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt);">วิเคราะห์โภชนาการ</div>
@@ -297,7 +299,7 @@ main {
     </div>
   </header>
 
-  <main style="padding:2rem 2.5rem 3.5rem;max-width:1280px;width:100%;">
+  <main>
 
     <div class="rv rv1" style="margin-bottom:1.8rem;">
       <p style="font-size:.72rem;color:var(--muted);margin-bottom:3px;">การวิเคราะห์</p>

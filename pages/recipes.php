@@ -205,12 +205,29 @@ main { padding: 2rem 2.5rem 3.5rem; width: 100%; max-width: 100%; margin: 0 auto
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
 
-.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; }
+/* ── 🌟 Responsive CSS (รองรับมือถือและทุกหน้าจอ) ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; }
+
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.show { transform: translateX(0); }
   .page-wrap { margin-left: 0 !important; }
   .menu-toggle { display: flex; }
+}
+
+@media (max-width: 768px) {
+  .topbar { flex-wrap: wrap; height: auto; padding: 12px 1.5rem; gap: 10px; }
+  .search-wrap-container { max-width: 100% !important; margin-top: 5px; width: 100%; justify-content: flex-start !important; }
+  .search-wrap { max-width: 100% !important; }
+  main { padding: 1.5rem 1.2rem 3rem !important; }
+  .rv1 { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 12px 1rem; }
+  .recipe-grid { grid-template-columns: 1fr; }
+  /* ปรับ Dropdown เมนูกรองให้กลายเป็น Popup ตรงกลางจอบนมือถือ */
+  #filterDropdown { position: fixed !important; top: 10% !important; left: 5% !important; right: 5% !important; max-height: 80vh !important; }
 }
 </style>
 </head>
@@ -221,6 +238,9 @@ main { padding: 2rem 2.5rem 3.5rem; width: 100%; max-width: 100%; margin: 0 auto
 <div class="page-wrap">
 
   <header class="topbar">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
+      <i class="fas fa-bars"></i>
+    </button>
     <a href="dashboard.php" class="tb-back"><i class="fas fa-arrow-left"></i></a>
     <div>
       <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt);">สูตรอาหาร</div>

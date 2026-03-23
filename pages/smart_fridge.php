@@ -95,7 +95,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 main { 
     padding: 2rem 2.5rem 3.5rem; 
     width: 100%; 
-    max-width: 100%; /* เปลี่ยนจาก 1280px เป็น 100% */
+    max-width: 100%; 
     margin: 0 auto; 
 }
 
@@ -168,29 +168,26 @@ main {
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
 
-/* ── สไตล์ปุ่ม Hamburger Menu ── */
-.menu-toggle {
-  display: none;
-  width: 38px; height: 38px; border-radius: 11px;
-  background: white; border: 1px solid var(--bdr);
-  align-items: center; justify-content: center;
-  color: var(--sub); font-size: 0.9rem; cursor: pointer;
-}
-/* ── การจัดการ Layout บนมือถือ (จอเล็กกว่า 1024px) ── */
+/* ── 🌟 Responsive CSS (รองรับมือถือและทุกหน้าจอ) ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
+
 @media (max-width: 1024px) {
-  .sidebar {
-    transform: translateX(-100%); /* ซ่อน Sidebar ออกไปด้านซ้าย */
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .sidebar.show {
-    transform: translateX(0); /* เลื่อน Sidebar กลับเข้ามาเมื่อมีคลาส .show */
-  }
-  .page-wrap {
-    margin-left: 0 !important; /* ให้เนื้อหาหลักขยายเต็มจอ */
-  }
-  .menu-toggle {
-    display: flex; /* แสดงปุ่มเมนูบนมือถือ */
-  }
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .sidebar.show { transform: translateX(0); }
+  .page-wrap { margin-left: 0 !important; }
+  .menu-toggle { display: flex; }
+  .fridge-grid { grid-template-columns: 1fr !important; } /* เปลี่ยนตารางเลือกวัตถุดิบและแผงด้านข้างให้เรียงแนวตั้งบนแท็บเล็ต */
+}
+
+@media (max-width: 768px) {
+  main { padding: 1.5rem 1.2rem 3rem !important; }
+  .topbar { padding: 0 1.5rem; }
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 0 1rem; }
+  .add-custom { flex-direction: column; gap: 8px; align-items: stretch; } /* กล่องพิมพ์เพิ่มวัตถุดิบ ขยาย 100% บนมือถือ */
+  .add-btn { width: 100%; border-radius: 8px; }
 }
 </style>
 </head>
@@ -202,6 +199,9 @@ main {
 <div class="page-wrap">
 
   <header class="topbar">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
+      <i class="fas fa-bars"></i>
+    </button>
     <a href="dashboard.php" class="tb-back"><i class="fas fa-arrow-left"></i></a>
     <div>
       <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt);">ตู้เย็นอัจฉริยะ</div>
@@ -209,7 +209,7 @@ main {
     </div>
   </header>
 
-  <main style="padding:2rem 2.5rem 3.5rem;max-width:1080px;width:100%;">
+  <main>
 
     <!-- HEADER -->
     <div class="rv rv1" style="margin-bottom:1.8rem;">
@@ -238,9 +238,8 @@ main {
     </div>
     <?php endif; ?>
 
-    <div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;">
+    <div class="fridge-grid" style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;">
 
-      <!-- LEFT: Ingredient selection -->
       <div>
 
         <!-- Search -->
@@ -271,7 +270,7 @@ main {
               ✏️ เพิ่มวัตถุดิบที่ไม่มีในรายการ
             </label>
             <div class="add-custom">
-              <i class="fas fa-plus-circle" style="color:var(--g500);font-size:1.1rem;"></i>
+              <i class="fas fa-plus-circle" style="color:var(--g500);font-size:1.1rem; flex-shrink:0;"></i>
               <input type="text" id="customInput" placeholder="ระบุชื่อวัตถุดิบ..." onkeypress="if(event.key==='Enter') addCustomIngredient()">
               <button class="add-btn" onclick="addCustomIngredient()">
                 <i class="fas fa-plus"></i>

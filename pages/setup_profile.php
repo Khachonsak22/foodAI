@@ -76,7 +76,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 main { 
     padding: 2rem 2.5rem 3.5rem; 
     width: 100%; 
-    max-width: 100%; /* เปลี่ยนจาก 1280px เป็น 100% */
+    max-width: 100%; 
     margin: 0 auto; 
 }
 
@@ -157,29 +157,29 @@ main {
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
 
-/* ── สไตล์ปุ่ม Hamburger Menu ── */
-.menu-toggle {
-  display: none;
-  width: 38px; height: 38px; border-radius: 11px;
-  background: white; border: 1px solid var(--bdr);
-  align-items: center; justify-content: center;
-  color: var(--sub); font-size: 0.9rem; cursor: pointer;
-}
-/* ── การจัดการ Layout บนมือถือ (จอเล็กกว่า 1024px) ── */
+/* ── 🌟 Responsive CSS (รองรับมือถือและทุกหน้าจอ) ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
+
 @media (max-width: 1024px) {
-  .sidebar {
-    transform: translateX(-100%); /* ซ่อน Sidebar ออกไปด้านซ้าย */
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .sidebar.show {
-    transform: translateX(0); /* เลื่อน Sidebar กลับเข้ามาเมื่อมีคลาส .show */
-  }
-  .page-wrap {
-    margin-left: 0 !important; /* ให้เนื้อหาหลักขยายเต็มจอ */
-  }
-  .menu-toggle {
-    display: flex; /* แสดงปุ่มเมนูบนมือถือ */
-  }
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .sidebar.show { transform: translateX(0); }
+  .page-wrap { margin-left: 0 !important; }
+  .menu-toggle { display: flex; }
+}
+
+@media (max-width: 768px) {
+  main { padding: 1.5rem 1.2rem 3rem !important; }
+  .topbar { padding: 0 1.5rem; }
+  .body-stats-grid { grid-template-columns: 1fr !important; } /* ให้ช่องเพศ, อายุ เรียงแนวตั้งบนแท็บเล็ต */
+  .diet-grid { grid-template-columns: repeat(2, 1fr) !important; } /* รูปแบบการกินเรียง 2 คอลัมน์ */
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 0 1rem; }
+  .diet-grid { grid-template-columns: 1fr !important; } /* รูปแบบการกินเรียง 1 คอลัมน์ บนมือถือ */
+  .rv1 h1 { font-size: 1.5rem !important; }
+  .form-card { padding: 20px !important; }
+  .goal-card { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
 </style>
 </head>
@@ -192,6 +192,9 @@ main {
 
   <!-- Topbar -->
   <header class="topbar">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
+      <i class="fas fa-bars"></i>
+    </button>
     <a href="dashboard.php" class="tb-back"><i class="fas fa-arrow-left"></i></a>
     <div>
       <div class="topbar-title">ข้อมูลสุขภาพ</div>
@@ -210,7 +213,7 @@ main {
           <span class="section-icon" style="background:#f0fdf4;border:1px solid var(--g200);"><i class="fas fa-weight" style="color: #0e9235;"></i></span>
           ข้อมูลร่างกาย
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="body-stats-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div>
             <label class="field-label">เพศ</label>
             <div style="position:relative;">
@@ -292,7 +295,7 @@ main {
           <span class="section-icon" style="background:#eff6ff;border:1px solid #bfdbfe;"><i class="fas fa-utensils" style="color: #22c55e;"></i></span>
           รูปแบบการกิน <span style="font-size:.7rem;font-weight:500;color:var(--muted);">(เลือกได้มากกว่า 1)</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div class="diet-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
           <?php
           // 1. กำหนดไอคอนเริ่มต้น (ถ้าแอดมินเพิ่มคีย์ใหม่นอกเหนือจากนี้ จะเป็นรูปแท็ก 🏷️ อัตโนมัติ)
           $icon_map = [

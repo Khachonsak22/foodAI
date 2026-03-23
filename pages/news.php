@@ -194,14 +194,35 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
 main { padding: 2rem 2.5rem 4rem; width: 100%; max-width: 1200px; margin: 0 auto; }
 
-/* Responsive Sidebar */
-.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; }
+/* ── Responsive CSS ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
+
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
   .sidebar.show { transform: translateX(0); }
   .page-wrap { margin-left: 0 !important; }
   .menu-toggle { display: flex; }
   main { padding: 1.5rem 1rem; }
+}
+@media (max-width: 768px) {
+  .topbar { padding: 0 1.5rem; }
+  main { padding: 1.2rem 1rem 3rem; }
+  .rv1 h1 { font-size: 1.5rem !important; }
+  .featured-card { border-radius: 16px; }
+  .featured-img { height: 200px; }
+  .featured-body { padding: 20px; }
+  .featured-body h2 { font-size: 1.2rem !important; margin-bottom: 8px !important; }
+  .news-grid { grid-template-columns: 1fr; gap: 16px; } 
+  .n-img { height: 160px; }
+  .n-body { padding: 16px; }
+  .pagination { flex-wrap: wrap; gap: 4px; }
+  .page-btn { width: 32px; height: 32px; font-size: .75rem; }
+}
+@media (max-width: 480px) {
+  .topbar { padding: 0 1rem; }
+  .featured-img { height: 180px; }
+  .feat-badge { font-size: 0.6rem; padding: 4px 10px; margin-bottom: 10px; }
+  .topbar > div:last-child { display: none; } /* ซ่อนข้อความรีเซ็ตเวลา 07.00น. บนจอเล็กเพื่อไม่ให้เบียดกัน */
 }
 </style>
 </head>

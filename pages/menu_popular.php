@@ -186,11 +186,21 @@ main {
 
 .empty{text-align:center;padding:80px 20px;background:rgba(255,255,255,.6);border-radius:20px;border:2px dashed var(--g200);}
 
+/* ── สไตล์ปุ่ม Hamburger Menu ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px;}
+
+/* ── Responsive CSS ── */
 @media(max-width:1024px){
-  .sidebar{transform:translateX(-100%);}
+  .sidebar{transform:translateX(-100%); transition: transform 0.3s;}
   .sidebar.show{transform:translateX(0);}
   .page-wrap{margin-left:0;}
   .recipe-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
+  .menu-toggle { display: flex; }
+  .top3-container { grid-template-columns: repeat(2, 1fr) !important; } /* ให้ 3 อันดับแรกเรียงเป็น 2 คอลัมน์บนแท็บเล็ต */
+}
+@media(max-width: 768px) {
+  main { padding: 1.5rem 1.2rem 3rem !important; }
+  .top3-container { grid-template-columns: 1fr !important; } /* ให้ 3 อันดับแรกเรียง 1 คอลัมน์บนมือถือ */
 }
 </style>
 </head>
@@ -202,6 +212,9 @@ main {
 <div class="page-wrap">
 
   <header class="topbar">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
+      <i class="fas fa-bars"></i>
+    </button>
     <a href="dashboard.php" class="tb-back"><i class="fas fa-arrow-left"></i></a>
     <div>
       <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt);">เมนูยอดนิยม</div>
@@ -225,7 +238,7 @@ main {
     <div class="rv rv2" style="margin-bottom:2.5rem;">
       <h2 class="stitle" style="margin-bottom:18px;">Top 3 เมนูที่มีผู้เข้าดูมากที่สุด</h2>
       
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div class="top3-container" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
         <?php foreach ($top_3_viewed as $idx => $recipe):
           $rank = $idx + 1;
           $color = $medal_colors[$rank];
@@ -355,7 +368,7 @@ main {
     <div class="rv rv4" style="margin-bottom:2.5rem;">
       <h2 class="stitle" style="margin-bottom:18px;">Top 3 เมนูที่ผู้ใช้กดถูกใจมากที่สุด</h2>
       
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div class="top3-container" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
         <?php foreach ($top_3_favorited as $idx => $recipe):
           $rank = $idx + 1;
           $color = $medal_colors[$rank];

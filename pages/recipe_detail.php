@@ -161,12 +161,12 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
 .action-btns { display: flex; gap: 10px; }
 
 /* ── Responsive Mobile Styles ── */
-.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; }
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; }
 
 @media (max-width: 1024px) {
   .page-wrap { margin-left: 0 !important; }
   .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-  .sidebar.open { transform: translateX(0); }
+  .sidebar.show { transform: translateX(0); }
   .menu-toggle { display: flex; }
 }
 
@@ -195,7 +195,7 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
 <div class="page-wrap">
   <main>
     <div style="display:flex; align-items:center; gap: 14px; margin-bottom:20px;">
-      <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+      <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
         <i class="fas fa-bars"></i>
       </button>
       <a href="recipes.php" style="display:inline-flex;align-items:center;gap:8px;color:var(--g600);font-size:.82rem;font-weight:600;text-decoration:none;">
