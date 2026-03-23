@@ -235,7 +235,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
 }
 .food-card img{
   width:100%;
-  height:300px;
+  height:250px;
   object-fit:cover;
   display:block;
 }
