@@ -41,7 +41,7 @@ $daily_data = [];
 for ($i = (int)$range - 1; $i >= 0; $i--) {
     $d = date('Y-m-d', strtotime("-$i days"));
     
-    // 🌟 แก้ไข 1: แคลอรี่ที่ "กดบันทึกกินเอง" และเป็นเมนูที่ "มาจาก AI"
+    // แคลอรี่ที่ "กดบันทึกกินเอง" และเป็นเมนูที่ "มาจาก AI"
     $s1 = $conn->prepare("
         SELECT COALESCE(SUM(r.calories),0) as c 
         FROM meal_logs ml 
@@ -53,7 +53,7 @@ for ($i = (int)$range - 1; $i >= 0; $i--) {
     $s1->execute();
     $ai_cal = (int)$s1->get_result()->fetch_assoc()['c'];
     
-    // 🌟 แก้ไข 2: แคลอรี่ที่ "กดบันทึกกินเอง" และเป็น "เมนูทั่วไปของระบบ"
+    // แคลอรี่ที่ "กดบันทึกกินเอง" และเป็น "เมนูทั่วไปของระบบ"
     $s2 = $conn->prepare("
         SELECT COALESCE(SUM(r.calories),0) as c 
         FROM meal_logs ml 
@@ -115,7 +115,7 @@ $top_stmt->execute();
 $top_recipes = $top_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 /* ── Consistency score (days logged in last 30) ── */
-// 🌟 แก้ไข 3: วัดความสม่ำเสมอเฉพาะวันที่ "กดบันทึกการกิน" เท่านั้น
+// ดความสม่ำเสมอเฉพาะวันที่ "กดบันทึกการกิน" เท่านั้น
 $consistency_stmt = $conn->prepare(
     "SELECT COUNT(DISTINCT DATE(logged_at)) as days_logged
      FROM meal_logs 
@@ -249,7 +249,7 @@ main {
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
 
-/* ── 🌟 Responsive CSS (รองรับมือถือและทุกหน้าจอ) ── */
+/* ── 🌟 Responsive CSS (ปรับปรุง Topbar ให้ยืดหยุ่น) ── */
 .menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
 
 @media (max-width: 1024px) {
@@ -257,21 +257,23 @@ main {
   .sidebar.show { transform: translateX(0); }
   .page-wrap { margin-left: 0 !important; }
   .menu-toggle { display: flex; }
-  .rv3, .rv4 { grid-template-columns: 1fr !important; } /* กราฟแท่ง, สัดส่วนมื้ออาหาร เรียงแนวตั้งบนแท็บเล็ต */
+  .rv3, .rv4 { grid-template-columns: 1fr !important; } 
 }
 
 @media (max-width: 768px) {
   main { padding: 1.5rem 1.2rem 3rem !important; }
-  .topbar { padding: 0 1.5rem; }
-  .rv2 { grid-template-columns: repeat(2, 1fr) !important; } /* กล่องสถิติ 4 อัน ปรับเป็นแถวละ 2 กล่อง */
-  .rv5 > div { grid-template-columns: 1fr !important; } /* สรุปภาพรวมด้านล่าง 3 กล่อง ปรับเรียงแนวตั้ง 1 แถว */
+  .topbar { flex-wrap: wrap; height: auto; padding: 12px 1.5rem; gap: 10px; }
+  .rv2 { grid-template-columns: repeat(2, 1fr) !important; } 
+  .rv5 > div { grid-template-columns: 1fr !important; } 
 }
 
 @media (max-width: 480px) {
-  .topbar { padding: 0 1rem; }
-  .rv2 { grid-template-columns: 1fr !important; } /* กล่องสถิติเรียงแนวตั้ง 1 กล่องต่อแถว บนมือถือเล็กสุด */
-  .range-tabs { gap: 2px; }
-  .range-tab { padding: 4px 10px; font-size: .7rem; } /* ปรับขนาดปุ่มวันที่ให้เล็กลงไม่ให้เบียดจอ */
+  .topbar { padding: 12px 1rem; }
+  /* ดันแท็บ 7, 14, 30 วัน ลงบรรทัดใหม่และขยายเต็ม */
+  .topbar > div:last-child { width: 100%; margin-top: 5px; display: flex; justify-content: flex-start; }
+  .range-tabs { width: 100%; justify-content: space-between; }
+  .range-tab { flex: 1; text-align: center; justify-content: center; }
+  .rv2 { grid-template-columns: 1fr !important; } 
 }
 </style>
 </head>

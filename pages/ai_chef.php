@@ -256,7 +256,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   </div>
 
   <div class="chips-row" id="chipsRow">
-    <span class="chip" onclick="sendChip(this)">จัดเมนู 3 มื้อ + 1 ว่าง สำหรับวันนี้</span>
+    <span class="chip" onclick="sendChip(this)">เมนูสำหรับวันนี้</span>
     <span class="chip" onclick="sendChip(this)">เมนูไก่วันนี้</span>
     <span class="chip" onclick="sendChip(this)">เมนูสุขภาพที่ฉันกินได้</span>
   </div>
