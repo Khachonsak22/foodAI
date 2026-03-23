@@ -168,7 +168,7 @@ $r_stmt = $conn->prepare("SELECT id, title, calories FROM recipes ORDER BY title
 $r_stmt->execute();
 $all_recipes = $r_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-/* ── แก้ไข: Quick-add AI menus list ดึงมาแค่ของวันที่เลือกดูเท่านั้น ── */
+/* ── Quick-add AI menus list ดึงมาแค่ของวันที่เลือกดูเท่านั้น ── */
 $all_ai_stmt = $conn->prepare("SELECT id, menu_name, calories FROM ai_saved_menus WHERE user_id = ? AND DATE(created_at) = ? ORDER BY created_at DESC");
 $all_ai_stmt->bind_param("is", $user_id, $selected_date);
 $all_ai_stmt->execute();
@@ -328,27 +328,44 @@ main { padding: 2rem 2.5rem 3.5rem; width: 100%; max-width: 100%; margin: 0 auto
 /* ─── Empty state ─── */
 .empty{border:2px dashed var(--g200);border-radius:14px;text-align:center;padding:2rem 1rem;color:var(--muted);}
 
-/* ── สไตล์ปุ่ม Hamburger Menu ── */
-.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
+/* ── Responsive CSS (ปรับปรุงความสมดุลทุกหน้าจอ) ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 8px; }
 
-/* ── Responsive CSS ── */
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.show { transform: translateX(0); }
   .page-wrap { margin-left: 0 !important; }
   .menu-toggle { display: flex; }
-  .rv3 { grid-template-columns: 1fr !important; } /* จัดให้กล่องบันทึกมื้อ และ สถิติ เรียงแนวตั้งบน Tablet */
+  .rv3 { grid-template-columns: 1fr !important; } 
 }
+
 @media (max-width: 768px) {
   main { padding: 1.5rem 1.2rem 3rem !important; }
-  .rv2 { grid-template-columns: 1fr !important; } /* จัดให้วงกลมแคลอรี่ และ กราฟแท่ง เรียงแนวตั้งบนมือถือ */
-  .meal-type-grid { grid-template-columns: repeat(2, 1fr) !important; } /* ปุ่มเลือกมื้อใน Modal ให้มี 2 คอลัมน์ */
+  .topbar { padding: 0 1.5rem; }
+  .rv2 { grid-template-columns: 1fr !important; } 
+  .meal-type-grid { grid-template-columns: repeat(2, 1fr) !important; } 
+  .card { padding: 20px !important; } 
+}
+
+@media (max-width: 480px) {
+  .topbar { flex-wrap: wrap; height: auto; padding: 12px 1rem; gap: 10px; }
+  .topbar > div:nth-child(3) { flex: 1; min-width: 0; } /* ให้ชื่อหน้าขยายและไม่ล้นกรอบ */
+  .topbar > div:last-child { width: 100%; margin-left: 0 !important; margin-top: 4px; }
+  .topbar > div:last-child .btn-green { width: 100%; justify-content: center; padding: 10px; font-size: .8rem; }
+  
+  .rv1 { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+  .date-nav { width: 100%; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .date-nav .btn-ghost { width: 100%; justify-content: center; text-align: center; margin-top: 4px; }
+  
   .ring-wrap { width: 90px; height: 90px; }
   .ring-wrap svg { width: 90px; height: 90px; }
   .ring-center span { font-size: 1.2rem !important; }
-}
-@media (max-width: 480px) {
-  .date-nav { width: 100%; justify-content: space-between; margin-top: 10px; } /* ปุ่มเลื่อนวัน กางเต็มจอบนมือถือ */
+  
+  .meal-header { flex-wrap: wrap; }
+  .meal-header > div:last-child { width: 100%; justify-content: space-between; margin-left: 0 !important; margin-top: 8px; }
+  
+  /* ทำให้ปุ่มลบเมนูโชว์ตลอดเวลาบนมือถือ (เพราะไม่มี hover) */
+  .del-btn { opacity: 1; background: var(--g50); border: 1px solid var(--bdr); }
 }
 </style>
 </head>
