@@ -168,7 +168,7 @@ $r_stmt = $conn->prepare("SELECT id, title, calories FROM recipes ORDER BY title
 $r_stmt->execute();
 $all_recipes = $r_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-/* ── Quick-add AI menus list ดึงมาแค่ของวันที่เลือกดูเท่านั้น ── */
+/* ── แก้ไข: Quick-add AI menus list ดึงมาแค่ของวันที่เลือกดูเท่านั้น ── */
 $all_ai_stmt = $conn->prepare("SELECT id, menu_name, calories FROM ai_saved_menus WHERE user_id = ? AND DATE(created_at) = ? ORDER BY created_at DESC");
 $all_ai_stmt->bind_param("is", $user_id, $selected_date);
 $all_ai_stmt->execute();
@@ -328,26 +328,27 @@ main { padding: 2rem 2.5rem 3.5rem; width: 100%; max-width: 100%; margin: 0 auto
 /* ─── Empty state ─── */
 .empty{border:2px dashed var(--g200);border-radius:14px;text-align:center;padding:2rem 1rem;color:var(--muted);}
 
-/* ── 🌟 Responsive CSS (ปรับปรุง Topbar ให้ยืดหยุ่น) ── */
+/* ── สไตล์ปุ่ม Hamburger Menu ── */
 .menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
 
+/* ── Responsive CSS ── */
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.show { transform: translateX(0); }
   .page-wrap { margin-left: 0 !important; }
   .menu-toggle { display: flex; }
+  .rv3 { grid-template-columns: 1fr !important; } /* จัดให้กล่องบันทึกมื้อ และ สถิติ เรียงแนวตั้งบน Tablet */
 }
-
 @media (max-width: 768px) {
-  .topbar { flex-wrap: wrap; height: auto; padding: 12px 1.5rem; gap: 10px; }
   main { padding: 1.5rem 1.2rem 3rem !important; }
+  .rv2 { grid-template-columns: 1fr !important; } /* จัดให้วงกลมแคลอรี่ และ กราฟแท่ง เรียงแนวตั้งบนมือถือ */
+  .meal-type-grid { grid-template-columns: repeat(2, 1fr) !important; } /* ปุ่มเลือกมื้อใน Modal ให้มี 2 คอลัมน์ */
+  .ring-wrap { width: 90px; height: 90px; }
+  .ring-wrap svg { width: 90px; height: 90px; }
+  .ring-center span { font-size: 1.2rem !important; }
 }
-
 @media (max-width: 480px) {
-  .topbar { padding: 12px 1rem; }
-  /* ปรับให้ปุ่ม AI ลงมาบรรทัดใหม่และขยายเต็มจอ */
-  .topbar > div:last-child { width: 100%; margin-top: 5px; }
-  .topbar > div:last-child .btn-green { width: 100%; justify-content: center; padding: 10px; }
+  .date-nav { width: 100%; justify-content: space-between; margin-top: 10px; } /* ปุ่มเลื่อนวัน กางเต็มจอบนมือถือ */
 }
 </style>
 </head>
