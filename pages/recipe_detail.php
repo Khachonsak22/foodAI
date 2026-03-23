@@ -154,6 +154,38 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
 .review-stars i{color:#fbbf24;}
 .review-comment{font-size:.82rem;color:var(--sub);line-height:1.6;}
 .review-date{font-size:.7rem;color:var(--muted);margin-top:8px;}
+
+/* ── คลาสสำหรับจัดหน้าจอ (Grid Layouts) ── */
+.grid-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
+.grid-content { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.action-btns { display: flex; gap: 10px; }
+
+/* ── Responsive Mobile Styles ── */
+.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; }
+
+@media (max-width: 1024px) {
+  .page-wrap { margin-left: 0 !important; }
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .sidebar.open { transform: translateX(0); }
+  .menu-toggle { display: flex; }
+}
+
+@media (max-width: 768px) {
+  main { padding: 1.5rem 1.2rem 3rem !important; }
+  .card { padding: 20px !important; }
+  .grid-hero { grid-template-columns: 1fr !important; gap: 20px !important; }
+  .grid-content { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .hero-img { height: 260px !important; }
+  h1 { font-size: 1.6rem !important; }
+  .action-btns { flex-direction: row; flex-wrap: wrap; }
+  .action-btns .btn { flex: 1; }
+  .badge { padding: 4px 10px; font-size: .7rem; }
+}
+
+@media (max-width: 480px) {
+  .hero-img { height: 200px !important; }
+  .action-btns { flex-direction: column; }
+}
 </style>
 </head>
 <body>
