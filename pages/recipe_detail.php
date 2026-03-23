@@ -84,7 +84,7 @@ $conn->query("UPDATE recipes SET view_count = COALESCE(view_count,0)+1 WHERE id=
 <style>
 :root{--g50:#f0fdf4;--g400:#4ade80;--g500:#22c55e;--g600:#16a34a;--g700:#15803d;--t400:#2dd4bf;--t500:#14b8a6;--bg:#f5f8f5;--card:#fff;--bdr:#e8f0e9;--txt:#1a2e1a;--sub:#4b6b4e;--muted:#8da98f;--sb-w:248px;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);display:flex;}
+body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(circle,#c8e6c9 1px,transparent 1px);background-size:28px 28px;opacity:.35;}
 .page-wrap{margin-left:var(--sb-w);flex:1;position:relative;z-index:1;}
 main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
@@ -103,8 +103,8 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
 .ingredient-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--g50);border-radius:10px;font-size:.82rem;}
 .ingredient-item i{color:var(--g500);font-size:.8rem;}
 .step-item{display:flex;gap:16px;padding:16px;background:var(--g50);border-radius:14px;border-left:4px solid var(--g500);margin-bottom:10px;}
-.step-number{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--g500),var(--t500));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;}
-.btn{padding:12px 24px;border-radius:12px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;border:none;text-decoration:none;}
+.step-number{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--g500),var(--t500));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.btn{padding:12px 24px;border-radius:12px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;text-decoration:none;}
 .btn-green{background:linear-gradient(135deg,var(--g500),var(--t500));color:#fff;box-shadow:0 4px 14px rgba(34,197,94,.25);}
 .btn-green:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(34,197,94,.35);}
 
@@ -194,16 +194,21 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
 
 <div class="page-wrap">
   <main>
-    <a href="recipes.php" style="display:inline-flex;align-items:center;gap:8px;color:var(--g600);font-size:.82rem;font-weight:600;text-decoration:none;margin-bottom:20px;">
-      <i class="fas fa-arrow-left"></i> กลับไปหน้าสูตรอาหาร
-    </a>
+    <div style="display:flex; align-items:center; gap: 14px; margin-bottom:20px;">
+      <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <i class="fas fa-bars"></i>
+      </button>
+      <a href="recipes.php" style="display:inline-flex;align-items:center;gap:8px;color:var(--g600);font-size:.82rem;font-weight:600;text-decoration:none;">
+        <i class="fas fa-arrow-left"></i> กลับไปหน้าสูตรอาหาร
+      </a>
+    </div>
 
     <?php if ($success_msg): ?>
     <div style="background:#f0fdf4;border:1.5px solid var(--g300);color:var(--g700);padding:12px 16px;border-radius:12px;margin-bottom:20px;font-size:.82rem;">✅ <?= $success_msg ?></div>
     <?php endif; ?>
 
     <div class="card" style="margin-bottom:24px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center;">
+      <div class="grid-hero">
         <div>
           <?php $img_path = '../public/uploads/' . $recipe['image']; if (!empty($recipe['image']) && file_exists($img_path)): ?>
             <img src="<?= $img_path ?>" class="hero-img">
@@ -251,7 +256,7 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
             <span class="badge" style="background:#fff;border:1px solid var(--bdr);color:var(--sub);"><i class="fas fa-eye"></i> <?= number_format($recipe['view_count'] ?? 0) ?> ครั้ง</span>
           </div>
 
-          <div style="display:flex;gap:10px;">
+          <div class="action-btns">
             <button class="btn btn-favorite <?= $is_favorited ? 'active' : '' ?>" 
                     id="favoriteBtn" 
                     onclick="toggleFavorite(<?= $recipe_id ?>)">
@@ -266,7 +271,7 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+    <div class="grid-content">
       <div class="card">
         <h2 class="section-title"><i class="fas fa-carrot" style="color:var(--g500);"></i> วัตถุดิบ</h2>
         <div style="display:flex;flex-direction:column;gap:10px;">
