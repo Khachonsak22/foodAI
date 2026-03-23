@@ -419,7 +419,7 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
   margin-bottom:3rem;
 }
 
-/* Responsive */
+/* ─── Responsive (มีการปรับปรุง) ─── */
 @media (max-width:1024px){
   .hero-grid{grid-template-columns:1fr;gap:3rem;}
   .hero-images{margin-top:3rem;}
@@ -427,19 +427,45 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
   .gallery-grid{grid-template-columns:repeat(2,1fr);}
   .stats-grid{grid-template-columns:repeat(2,1fr);}
 }
+
 @media (max-width:768px){
-  .nav-links{display:none;}
-  .hero-title{font-size:2.8rem;}
+  /* ซ่อนเฉพาะเมนูข้อความ (ฟีเจอร์, แกลเลอรี่) แต่ปล่อยปุ่ม 'เข้าสู่ระบบ' ไว้ */
+  .nav-links .nav-link{display:none;}
+  .nav-container{padding: 1rem 1.5rem;}
+  .btn-nav{padding: 10px 18px; font-size: .85rem;}
+
+  .hero{padding: 7rem 0 3rem;}
+  .hero-title{font-size:2.5rem;}
   .hero-images{grid-template-columns:1fr;}
   .features-grid{grid-template-columns:1fr;}
   .gallery-grid{grid-template-columns:1fr;}
   .stats-grid{grid-template-columns:1fr;gap:2rem;}
 }
+
+@media (max-width:480px){
+  .hero-title{font-size:2.2rem;}
+  .section-title{font-size:2.2rem;}
+  .cta-title{font-size:2.2rem;}
+  
+  /* จัดเรียงปุ่มให้สมดุลและกดยากขึ้นบนจอมือถือ (กางเต็มจอ 100%) */
+  .hero-buttons{
+    flex-direction:column;
+    width:100%;
+    gap:12px;
+  }
+  .btn-primary, .btn-secondary{
+    width:100%;
+    justify-content:center;
+  }
+  .hero-badge{
+    font-size:.8rem;
+    padding:8px 18px;
+  }
+}
 </style>
 </head>
 <body>
 
-<!-- Navbar -->
 <nav class="navbar" id="navbar">
   <div class="nav-container">
     <a href="#" class="logo">
@@ -456,7 +482,6 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
   </div>
 </nav>
 
-<!-- Hero -->
 <section class="hero">
   <div class="container">
     <div class="hero-grid">
@@ -501,7 +526,6 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
   </div>
 </section>
 
-<!-- Features -->
 <section class="features" id="features">
   <div class="container">
     <div class="section-header reveal">
@@ -566,7 +590,6 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
   </div>
 </section>
 
-<!-- Gallery -->
 <section class="gallery" id="gallery">
   <div class="container">
     <div class="section-header reveal">
@@ -595,7 +618,6 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
   </div>
 </section>
 
-<!-- Stats -->
 <section class="stats reveal">
   <div class="container">
     <div class="stats-grid">
@@ -619,7 +641,6 @@ body{font-family:'Kanit',sans-serif;overflow-x:hidden;background:#fff;}
   </div>
 </section>
 
-<!-- CTA -->
 <section class="cta reveal">
   <div class="container">
     <div class="cta-content">
