@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $rid_raw   = $_POST['recipe_id'];
         $meal_type = $_POST['meal_type'] ?? 'lunch';
         
+        // 🌟 รับค่าวันที่จากหน้าเว็บ เพื่อให้การบันทึกย้อนหลังถูกต้องเสมอ
         $log_date  = $_POST['log_date'] ?? date('Y-m-d');
         $log_time  = date('H:i:s');
         $logged_at = $log_date . ' ' . $log_time;
@@ -167,9 +168,9 @@ $r_stmt = $conn->prepare("SELECT id, title, calories FROM recipes ORDER BY title
 $r_stmt->execute();
 $all_recipes = $r_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-/* ── Quick-add AI menus list ── */
-$all_ai_stmt = $conn->prepare("SELECT id, menu_name, calories FROM ai_saved_menus WHERE user_id = ? ORDER BY created_at DESC");
-$all_ai_stmt->bind_param("i", $user_id);
+/* ── แก้ไข: Quick-add AI menus list ดึงมาแค่ของวันที่เลือกดูเท่านั้น ── */
+$all_ai_stmt = $conn->prepare("SELECT id, menu_name, calories FROM ai_saved_menus WHERE user_id = ? AND DATE(created_at) = ? ORDER BY created_at DESC");
+$all_ai_stmt->bind_param("is", $user_id, $selected_date);
 $all_ai_stmt->execute();
 $all_ai_menus = $all_ai_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
