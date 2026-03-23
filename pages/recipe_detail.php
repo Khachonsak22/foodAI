@@ -39,6 +39,12 @@ $stmt->execute();
 $recipe = $stmt->get_result()->fetch_assoc();
 if (!$recipe) die("ไม่พบสูตรอาหารที่ต้องการ");
 
+// ✅ เช็คว่าผู้ใช้กดถูกใจหรือยัง
+$fav_stmt = $conn->prepare("SELECT id FROM user_interactions WHERE user_id = ? AND recipe_id = ? AND interaction_type = 'favorite'");
+$fav_stmt->bind_param("ii", $user_id, $recipe_id);
+$fav_stmt->execute();
+$is_favorited = $fav_stmt->get_result()->num_rows > 0;
+
 // ── ดึงข้อมูล Tags เฉพาะของเมนูนี้ เพื่อแสดงสีและไอคอน ──
 $stmt_tags = $conn->prepare("SELECT t.* FROM recipe_tags rt JOIN tags t ON rt.tag_id = t.id WHERE rt.recipe_id = ?");
 $stmt_tags->bind_param("i", $recipe_id);
@@ -101,6 +107,41 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
 .btn{padding:12px 24px;border-radius:12px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;border:none;text-decoration:none;}
 .btn-green{background:linear-gradient(135deg,var(--g500),var(--t500));color:#fff;box-shadow:0 4px 14px rgba(34,197,94,.25);}
 .btn-green:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(34,197,94,.35);}
+
+/* ✅ Favorite Button */
+.btn-favorite{
+  background:#fff;
+  color:#dc2626;
+  border:2px solid #fecaca;
+  box-shadow:0 2px 8px rgba(220,38,38,.1);
+}
+.btn-favorite:hover{
+  background:#fef2f2;
+  border-color:#f87171;
+  transform:translateY(-2px);
+  box-shadow:0 4px 12px rgba(220,38,38,.2);
+}
+.btn-favorite.active{
+  background:linear-gradient(135deg,#fecaca,#fbbf24);
+  border-color:#f87171;
+  color:#dc2626;
+  box-shadow:0 4px 12px rgba(239,68,68,.3);
+}
+.btn-favorite.active:hover{
+  transform:translateY(-2px) scale(1.02);
+}
+
+/* ✅ Share Button */
+.btn-share{
+  background:var(--g50);
+  color:var(--g600);
+  border:2px solid var(--g200);
+}
+.btn-share:hover{
+  background:var(--g100);
+  border-color:var(--g400);
+  transform:translateY(-2px);
+}
 .star-rating{display:flex;gap:4px;font-size:1.1rem;}
 .star-rating i{color:#fbbf24;cursor:pointer;transition:.2s;}
 .star-rating i.far{color:#d1d5db;}
@@ -179,8 +220,13 @@ main{padding:2rem 2.5rem 3.5rem;width:100%;max-width:1400px;margin:0 auto;}
           </div>
 
           <div style="display:flex;gap:10px;">
-            <button class="btn btn-green"><i class="fas fa-bookmark"></i> บันทึกเมนู</button>
-            <button class="btn" style="background:var(--g50);color:var(--g600);border:1px solid var(--g200);">
+            <button class="btn btn-favorite <?= $is_favorited ? 'active' : '' ?>" 
+                    id="favoriteBtn" 
+                    onclick="toggleFavorite(<?= $recipe_id ?>)">
+              <i class="fas fa-heart"></i> 
+              <span id="favBtnText"><?= $is_favorited ? 'ถูกใจแล้ว' : 'ถูกใจ' ?></span>
+            </button>
+            <button class="btn btn-share" onclick="shareRecipe()">
               <i class="fas fa-share-nodes"></i> แชร์
             </button>
           </div>
@@ -348,6 +394,125 @@ stars.forEach(s => {
   s.classList.remove('far');
   s.classList.add('fas');
 });
+
+// ✅ Favorite Toggle Function
+async function toggleFavorite(recipeId) {
+  try {
+    const btn = document.getElementById('favoriteBtn');
+    const btnText = document.getElementById('favBtnText');
+    
+    const res = await fetch('../api/toggle_favorite.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ recipe_id: recipeId })
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      // Toggle button state
+      btn.classList.toggle('active');
+      
+      // Update text
+      if (data.action === 'added') {
+        btnText.textContent = 'ถูกใจแล้ว';
+        showToast('❤️ เพิ่มในรายการโปรด');
+      } else {
+        btnText.textContent = 'ถูกใจ';
+        showToast('💔 ลบออกจากรายการโปรด');
+      }
+    } else {
+      showToast('⚠️ ' + (data.message || 'เกิดข้อผิดพลาด'), true);
+    }
+  } catch(e) {
+    console.error('Favorite error:', e);
+    showToast('⚠️ เกิดข้อผิดพลาด กรุณาลองใหม่', true);
+  }
+}
+
+// ✅ Share Recipe Function (Web Share API)
+async function shareRecipe() {
+  const recipeTitle = <?= json_encode($recipe['title']) ?>;
+  const recipeUrl = window.location.href;
+  
+  // Check if Web Share API is supported
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: recipeTitle + ' — FoodAI',
+        text: 'มาดูสูตรอาหารนี้กันเถอะ: ' + recipeTitle,
+        url: recipeUrl
+      });
+      showToast('✅ แชร์สำเร็จ!');
+    } catch(err) {
+      if (err.name !== 'AbortError') {
+        console.error('Share error:', err);
+        fallbackShare();
+      }
+    }
+  } else {
+    // Fallback for browsers that don't support Web Share API
+    fallbackShare();
+  }
+}
+
+// Fallback share function (copy to clipboard)
+function fallbackShare() {
+  const recipeUrl = window.location.href;
+  
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(recipeUrl).then(() => {
+      showToast('🔗 คัดลอกลิงก์แล้ว!');
+    }).catch(err => {
+      console.error('Copy error:', err);
+      showToast('⚠️ ไม่สามารถคัดลอกลิงก์', true);
+    });
+  } else {
+    // Old browser fallback
+    const textarea = document.createElement('textarea');
+    textarea.value = recipeUrl;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      showToast('🔗 คัดลอกลิงก์แล้ว!');
+    } catch(err) {
+      showToast('⚠️ ไม่สามารถคัดลอกลิงก์', true);
+    }
+    document.body.removeChild(textarea);
+  }
+}
+
+// Toast notification function
+function showToast(msg, isError = false) {
+  const toast = document.createElement('div');
+  toast.textContent = msg;
+  toast.style.cssText = `
+    position:fixed;bottom:24px;right:24px;z-index:9999;
+    background:${isError?'#fee2e2':'#f0fdf4'};
+    color:${isError?'#dc2626':'#15803d'};
+    border:2px solid ${isError?'#fecaca':'#bbf7d0'};
+    padding:14px 22px;border-radius:12px;font-size:.88rem;font-weight:600;
+    box-shadow:0 8px 24px rgba(0,0,0,.12);
+    animation:slideInUp .3s ease;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'slideOutDown .3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+// Add keyframe animations
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideInUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+  @keyframes slideOutDown { from{opacity:1;transform:translateY(0);} to{opacity:0;transform:translateY(20px);} }
+`;
+document.head.appendChild(style);
+
 </script>
 
 </body>
