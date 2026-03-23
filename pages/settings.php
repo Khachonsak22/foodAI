@@ -243,7 +243,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
           <input type="date" name="birth_date" value="<?= htmlspecialchars($birth_date) ?>" class="form-input">
         </div>
         
-        <!-- บันทึก -->
         <button type="submit" class="btn-primary">
           <i class="fas fa-save" style="margin-right:8px;"></i> บันทึกการเปลี่ยนแปลง
         </button>
