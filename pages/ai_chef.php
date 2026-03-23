@@ -59,7 +59,7 @@ while ($row = $chat_res->fetch_assoc()) {
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>เชฟ AI — FoodAI</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -77,7 +77,17 @@ while ($row = $chat_res->fetch_assoc()) {
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;}
-body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--txt);display:flex;height:100vh;overflow:hidden;}
+
+/* 🌟 แก้ไข: เพิ่ม height: 100dvh เพื่อให้กล่องแชทพอดีกับจอมือถือ (ไม่ทะลุลงไปข้างล่าง) */
+body{
+    font-family:'Kanit',sans-serif;
+    background:var(--bg);
+    color:var(--txt);
+    display:flex;
+    height:100vh; /* Fallback */
+    height:100dvh; /* Dynamic Viewport สำหรับมือถือรุ่นใหม่ */
+    overflow:hidden;
+}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(circle,#c8e6c9 1px,transparent 1px);background-size:28px 28px;opacity:.3;}
 
 /* ── Sidebar (shared) ── */
@@ -110,7 +120,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 ::-webkit-scrollbar-thumb { background:var(--g200);border-radius:99px; }
 
 /* ── Page shell ── */
-.page-wrap{margin-left:var(--sb-w);flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1;}
+/* 🌟 กำหนด width ให้คงที่เพื่อไม่ให้ล้นหน้าจอ */
+.page-wrap{margin-left:var(--sb-w);flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1;width:100%;}
 
 /* ── Chat topbar ── */
 .chat-topbar{height:66px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--sb-bdr);display:flex;align-items:center;padding:0 1.75rem;gap:14px;flex-shrink:0;box-shadow:0 2px 12px rgba(34,197,94,.05);}
@@ -163,17 +174,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .chip{background:white;border:1.5px solid var(--bdr);border-radius:99px;padding:6px 14px;font-size:.73rem;font-weight:500;color:var(--sub);cursor:pointer;transition:all .18s;font-family:'Kanit',sans-serif;}
 .chip:hover{border-color:var(--g400);background:var(--g50);color:var(--g700);}
 
-/* Input area */
-.input-bar{padding:12px 20px 16px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-top:1px solid var(--sb-bdr);flex-shrink:0;}
+/* ── Input area ── */
+/* 🌟 เพิ่ม env(safe-area-inset-bottom) สำหรับเว้นระยะแถบ Home ล่างสุดของมือถือ */
+.input-bar{
+    padding:12px 20px calc(16px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(12px);
+    border-top:1px solid var(--sb-bdr);
+    flex-shrink:0;
+}
 .input-wrap{background:white;border:2px solid var(--bdr);border-radius:16px;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 16px;transition:border-color .18s,box-shadow .18s;}
 .input-wrap:focus-within{border-color:var(--g400);box-shadow:0 0 0 3px rgba(74,222,128,.12);}
-.chat-input{flex:1;border:none;outline:none;background:transparent;font-family:'Kanit',sans-serif;font-size:.88rem;color:var(--txt);}
+.chat-input{flex:1;border:none;outline:none;background:transparent;font-family:'Kanit',sans-serif;font-size:.88rem;color:var(--txt);width:100%;}
 .chat-input::placeholder{color:var(--muted);}
 .send-btn{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--g500),var(--t500));border:none;color:white;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .18s,box-shadow .18s;flex-shrink:0;box-shadow:0 3px 10px rgba(34,197,94,.35);}
 .send-btn:hover{opacity:.88;box-shadow:0 5px 16px rgba(34,197,94,.42);}
 .send-btn:disabled{opacity:.5;cursor:not-allowed;}
 
-/* ── 🌟 สไตล์ปุ่ม Hamburger Menu (ใหม่) ── */
+/* ── สไตล์ปุ่ม Hamburger Menu ── */
 .menu-toggle {
   display: none;
   width: 36px; height: 36px; border-radius: 10px;
@@ -184,22 +202,23 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 }
 .menu-toggle:hover { background: var(--g50); border-color: var(--g200); color: var(--g600); }
 
-/* ── 🌟 ปรับแต่งสำหรับหน้าจอมือถือ (Mobile Responsive) ── */
+/* ── ปรับแต่งสำหรับหน้าจอมือถือ (Mobile Responsive) ── */
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.show { transform: translateX(0); }
-  .page-wrap { margin-left: 0 !important; }
-  .menu-toggle { display: flex; } /* แสดงปุ่ม Hamburger บนจอเล็ก */
+  .page-wrap { margin-left: 0 !important; width: 100%; }
+  .menu-toggle { display: flex; } 
 }
 
 @media (max-width: 768px) {
   .chat-topbar { padding: 0 1rem; gap: 10px; }
   .chef-avatar { width: 38px; height: 38px; }
   .chat-area { padding: 16px 12px; }
-  .bubble-ai, .bubble-user { max-width: 88%; font-size: .8rem; padding: 12px 14px; }
+  .bubble-ai, .bubble-user { max-width: 88%; font-size: .85rem; padding: 12px 14px; }
   .chips-row { padding: 10px 12px 4px; }
-  .chip { padding: 5px 12px; font-size: .7rem; }
-  .input-bar { padding: 10px 12px 12px; }
+  .chip { padding: 5px 12px; font-size: .75rem; }
+  /* ปรับระยะขอบล่างของกล่องข้อความให้สมดุลขึ้น */
+  .input-bar { padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); }
   
   /* ให้การ์ดเมนูเรียงเป็นแนวตั้งบนมือถือเพื่อให้กดยาวเต็มจอ */
   .menu-wrap-mobile { max-width: 90% !important; margin-left: 36px !important; }
@@ -209,7 +228,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 @media (max-width: 480px) {
   .bubble-ai, .bubble-user { max-width: 94%; }
-  .chat-topbar > div:nth-child(3) > div:first-child { font-size: .85rem; }
   .chat-topbar > div:last-child { display: none; } /* ซ่อนสถานะ Online ถ้าจอเล็กไป */
 }
 </style>
@@ -232,11 +250,13 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
       </svg>
       <span class="chef-online"></span>
     </div>
-    <div>
-      <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt);">เชฟ AI อัจฉริยะ</div>
-      <div style="font-size:.7rem;color:var(--g600);font-weight:500;">พร้อมให้บริการคุณ <?= htmlspecialchars($user_name) ?></div>
+    
+    <div style="flex: 1; min-width: 0;">
+      <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">เชฟ AI อัจฉริยะ</div>
+      <div style="font-size:.7rem;color:var(--g600);font-weight:500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">พร้อมให้บริการคุณ <?= htmlspecialchars($user_name) ?></div>
     </div>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:6px 12px;">
+
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:6px 12px; flex-shrink: 0;">
       <span style="width:7px;height:7px;border-radius:50%;background:var(--g500);display:inline-block;animation:livePulse 2s ease-in-out infinite;"></span>
       <span style="font-size:.68rem;font-weight:700;color:var(--g600);">Online</span>
     </div>
@@ -256,7 +276,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   </div>
 
   <div class="chips-row" id="chipsRow">
-    <span class="chip" onclick="sendChip(this)">เมนูสำหรับวันนี้</span>
+    <span class="chip" onclick="sendChip(this)">จัดเมนู 3 มื้อ + 1 ว่าง สำหรับวันนี้</span>
     <span class="chip" onclick="sendChip(this)">เมนูไก่วันนี้</span>
     <span class="chip" onclick="sendChip(this)">เมนูสุขภาพที่ฉันกินได้</span>
   </div>
@@ -311,7 +331,7 @@ function renderMessage(sender, text, animate = false, menus = null) {
   } else {
     rowEl.innerHTML = `
       ${aiAvatar()}
-      <div>
+      <div style="flex:1; min-width:0;">
         <div class="bubble-ai prose">${marked.parse(text)}</div>
       </div>
     `;
@@ -322,7 +342,7 @@ function renderMessage(sender, text, animate = false, menus = null) {
   // ส่วนสร้างการ์ดเมนูโดยมีป้ายบอกว่าเซฟอัตโนมัติแล้ว
   if (menus && menus.length > 0) {
       const wrap = document.createElement('div');
-      // 🌟 เพิ่มคลาส menu-wrap-mobile เพื่อให้กล่องขยายในมือถือได้
+      // menu-wrap-mobile เพื่อให้กล่องขยายในมือถือได้
       wrap.className = window.innerWidth <= 768 ? 'menu-wrap-mobile' : '';
       wrap.style.cssText = 'margin-left:42px;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-width:75%;';
       
