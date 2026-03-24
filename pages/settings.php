@@ -39,6 +39,7 @@ $current_page = 'settings.php';
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 :root{
   --g50:#f0fdf4;--g100:#dcfce7;--g200:#bbf7d0;--g300:#86efac;
@@ -92,6 +93,29 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 .btn-danger{background:#fff;color:#dc2626;border:2px solid #fecaca;font-size:.82rem;font-weight:600;padding:11px 22px;border-radius:12px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Kanit',sans-serif;}
 .btn-danger:hover{background:#fee2e2;border-color:#f87171;}
+
+/* ✅ Delete Avatar Button */
+.btn-delete-avatar{
+  background:#fff;
+  color:#dc2626;
+  border:2px solid #fecaca;
+  font-size:.75rem;
+  font-weight:600;
+  padding:8px 18px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:all .2s;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:'Kanit',sans-serif;
+}
+.btn-delete-avatar:hover{
+  background:#fee2e2;
+  border-color:#f87171;
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(220,38,38,.2);
+}
 
 /* Alert */
 .alert{padding:16px 20px;border-radius:14px;font-size:.85rem;margin-bottom:24px;display:flex;align-items:center;gap:12px;animation:slideUp .4s ease;}
@@ -200,6 +224,13 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
         </div>
       </form>
       <p style="font-size:.72rem;color:var(--muted);margin-top:16px;">รองรับ JPG, PNG (ขนาดไม่เกิน 2MB)</p>
+      
+      <?php if ($profile_image && file_exists("../public/uploads/avatars/" . $profile_image)): ?>
+      <!-- ✅ Delete Avatar Button -->
+      <button onclick="confirmDeleteAvatar()" class="btn-delete-avatar" style="margin-top:14px;">
+        <i class="fas fa-trash-alt"></i> ลบรูปโปรไฟล์
+      </button>
+      <?php endif; ?>
     </div>
 
     <!-- UNIFIED PROFILE & ACCOUNT INFO -->
@@ -298,6 +329,93 @@ function previewAvatar(input) {
     reader.readAsDataURL(input.files[0]);
   }
 }
+
+// ✅ Show success popup after avatar upload
+<?php if (isset($_SESSION['avatar_uploaded']) && $_SESSION['avatar_uploaded']): ?>
+<?php unset($_SESSION['avatar_uploaded']); ?>
+Swal.fire({
+  title: 'สำเร็จ!',
+  text: 'เปลี่ยนรูปโปรไฟล์เรียบร้อยแล้ว',
+  icon: 'success',
+  confirmButtonColor: '#22c55e',
+  confirmButtonText: 'ตกลง',
+  timer: 2000,
+  timerProgressBar: true
+});
+<?php endif; ?>
+
+// ✅ Confirm delete avatar
+function confirmDeleteAvatar() {
+  Swal.fire({
+    title: 'ลบรูปโปรไฟล์?',
+    text: "คุณต้องการลบรูปโปรไฟล์ใช่หรือไม่?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#9ca3af',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก',
+    reverseButtons: true
+  }).then((result) => {
+    if (result.isConfirmed) {
+      deleteAvatar();
+    }
+  });
+}
+
+// ✅ Delete avatar function
+function deleteAvatar() {
+  // Show loading
+  Swal.fire({
+    title: 'กำลังลบ...',
+    text: 'กรุณารอสักครู่',
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+  
+  // Send request
+  fetch('update_settings.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'action=delete_avatar'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      Swal.fire({
+        title: 'ลบสำเร็จ!',
+        text: 'ลบรูปโปรไฟล์เรียบร้อยแล้ว',
+        icon: 'success',
+        confirmButtonColor: '#22c55e',
+        confirmButtonText: 'ตกลง'
+      }).then(() => {
+        location.reload();
+      });
+    } else {
+      Swal.fire({
+        title: 'เกิดข้อผิดพลาด!',
+        text: data.message || 'ไม่สามารถลบรูปโปรไฟล์ได้',
+        icon: 'error',
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: 'ตกลง'
+      });
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด!',
+      text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้',
+      icon: 'error',
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'ตกลง'
+    });
+  });
+}
+
 </script>
 
 </body>

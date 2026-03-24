@@ -37,7 +37,7 @@ if ($action === 'upload_avatar') {
         }
         
         // Create upload directory if not exists
-        $upload_dir = __DIR__ .'/../public/uploads/avatars/';
+        $upload_dir = '../public/uploads/avatars/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
@@ -67,6 +67,8 @@ if ($action === 'upload_avatar') {
             $stmt->bind_param("si", $new_filename, $user_id);
             
             if ($stmt->execute()) {
+                // ✅ Set flag for success popup
+                $_SESSION['avatar_uploaded'] = true;
                 $_SESSION['settings_success'] = 'อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว';
             } else {
                 $_SESSION['settings_error'] = 'เกิดข้อผิดพลาดในการบันทึก';
@@ -85,7 +87,42 @@ if ($action === 'upload_avatar') {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ACTION 2: Update Profile (username + birth_date)
+// ACTION 2: Delete Avatar
+// ═══════════════════════════════════════════════════════════════
+if ($action === 'delete_avatar') {
+    header('Content-Type: application/json');
+    
+    // Get current avatar
+    $stmt = $conn->prepare("SELECT profile_image FROM users WHERE id = ?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $data = $stmt->get_result()->fetch_assoc();
+    
+    if ($data && $data['profile_image']) {
+        $avatar_path = '../public/uploads/avatars/' . $data['profile_image'];
+        
+        // Delete file from disk
+        if (file_exists($avatar_path)) {
+            unlink($avatar_path);
+        }
+        
+        // Update database
+        $update_stmt = $conn->prepare("UPDATE users SET profile_image = NULL WHERE id = ?");
+        $update_stmt->bind_param("i", $user_id);
+        
+        if ($update_stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'ลบรูปโปรไฟล์สำเร็จ']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาดในการอัปเดตฐานข้อมูล']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'ไม่พบรูปโปรไฟล์']);
+    }
+    exit();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACTION 3: Update Profile (username + birth_date)
 // ═══════════════════════════════════════════════════════════════
 if ($action === 'update_profile') {
     
