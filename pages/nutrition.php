@@ -78,7 +78,13 @@ for ($i = (int)$range - 1; $i >= 0; $i--) {
 
 /* ── Statistics ── */
 $total_cal_period = array_sum(array_column($daily_data, 'total'));
-$avg_cal_day      = count($daily_data) > 0 ? round($total_cal_period / count($daily_data)) : 0;
+
+// ✅ นับเฉพาะวันที่มีการบันทึก (total > 0)
+$days_with_records = count(array_filter($daily_data, fn($d) => $d['total'] > 0));
+
+// ✅ คำนวณค่าเฉลี่ยจากวันที่บันทึกจริง
+$avg_cal_day = $days_with_records > 0 ? round($total_cal_period / $days_with_records) : 0;
+
 $days_met_goal    = count(array_filter($daily_data, fn($d) => $d['total'] >= $targetCal));
 $max_day          = !empty($daily_data) ? max(array_column($daily_data, 'total')) : 0;
 $min_day          = !empty($daily_data) ? min(array_filter(array_column($daily_data, 'total'), fn($v) => $v > 0) ?: [0]) : 0;
@@ -346,11 +352,13 @@ main {
           <h2 class="stitle"><i class="bi bi-graph-up" style="color: #22c55e;"></i> แคลอรี่ที่บันทึกรายวัน</h2>
           <div style="display:flex;gap:12px;font-size:.68rem;">
             <div style="display:flex;align-items:center;gap:5px;">
-              <div style="width:10px;height:10px;border-radius:2px;background:var(--t500);"></div>
+              <!-- ✅ สีฟ้าเทอร์ควอยซ์ -->
+              <div style="width:10px;height:10px;border-radius:2px;background:linear-gradient(135deg, #5eead4, #14b8a6);"></div>
               <span style="color:var(--muted);">เมนูจาก AI</span>
             </div>
             <div style="display:flex;align-items:center;gap:5px;">
-              <div style="width:10px;height:10px;border-radius:2px;background:var(--g500);"></div>
+              <!-- ✅ สีเขียวสด -->
+              <div style="width:10px;height:10px;border-radius:2px;background:linear-gradient(135deg, #4ade80, #22c55e);"></div>
               <span style="color:var(--muted);">เมนูทั่วไป</span>
             </div>
           </div>
@@ -362,14 +370,16 @@ main {
             $rec_h = $max_chart > 0 ? max(4, round($dd['rec_cal'] / $max_chart * 140)) : 4;
             $total_h = $ai_h + $rec_h;
           ?>
-          <div class="chart-bar" title="<?= $dd['date_short'] ?>: <?= number_format($dd['total']) ?> kcal">
+          <div class="chart-bar" title="<?= $dd['date_short'] ?>: <?= number_format($dd['total']) ?> kcal (AI: <?= number_format($dd['ai_cal']) ?>, ทั่วไป: <?= number_format($dd['rec_cal']) ?>)">
             <div class="bar-track">
               <?php if ($dd['rec_cal'] > 0): ?>
-              <div class="bar-stack" style="height:<?= $rec_h ?>px;background:var(--g500);"></div>
+              <!-- ✅ เมนูทั่วไป: สีเขียวอ่อน #4ade80 -->
+              <div class="bar-stack" style="height:<?= $rec_h ?>px;background:linear-gradient(180deg, #4ade80, #22c55e);border-radius:0 0 3px 3px;"></div>
               <?php endif; ?>
               
               <?php if ($dd['ai_cal'] > 0): ?>
-              <div class="bar-stack" style="height:<?= $ai_h ?>px;background:var(--t500);"></div>
+              <!-- ✅ เมนูจาก AI: สีฟ้าเทอร์ควอยซ์ #14b8a6 -->
+              <div class="bar-stack" style="height:<?= $ai_h ?>px;background:linear-gradient(180deg, #5eead4, #14b8a6);border-radius:<?= $dd['rec_cal'] > 0 ? '0' : '0 0 3px 3px' ?>;"></div>
               <?php endif; ?>
             </div>
             <span class="bar-lbl"><?= date('j/n', strtotime($dd['date'])) ?></span>
@@ -379,7 +389,7 @@ main {
 
         <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--bdr);padding-top:14px;">
           <span style="font-size:.7rem;color:var(--muted);">เป้าหมายรายวัน: <strong style="color:var(--g600);"><?= number_format($targetCal) ?> kcal</strong></span>
-          <span style="font-size:.7rem;color:var(--muted);">รวม <?= $range ?> วัน: <strong style="color:var(--txt);"><?= number_format($total_cal_period) ?> kcal</strong></span>
+          <span style="font-size:.7rem;color:var(--muted);">รวม <?= $days_with_records ?> วันที่บันทึก: <strong style="color:var(--txt);"><?= number_format($total_cal_period) ?> kcal</strong></span>
         </div>
       </div>
 
