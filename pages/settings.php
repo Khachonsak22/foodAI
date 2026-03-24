@@ -353,7 +353,7 @@ function confirmDeleteAvatar() {
     showCancelButton: true,
     confirmButtonColor: '#dc2626',
     cancelButtonColor: '#9ca3af',
-    confirmButtonText: 'ใช่, ลบเลย!',
+    confirmButtonText: 'ลบ',
     cancelButtonText: 'ยกเลิก',
     reverseButtons: true
   }).then((result) => {
