@@ -35,10 +35,11 @@ if (!in_array($range, $valid_ranges)) $range = '7';
 
 $start_date = date('Y-m-d', strtotime("-$range days"));
 $end_date   = date('Y-m-d');
+$range_int  = (int)$range; // ตัวแปรสำหรับใช้ใน Query SQL
 
 /* ── Fetch daily calorie data for range ── */
 $daily_data = [];
-for ($i = (int)$range - 1; $i >= 0; $i--) {
+for ($i = $range_int - 1; $i >= 0; $i--) {
     $d = date('Y-m-d', strtotime("-$i days"));
     
     // แคลอรี่ที่ "กดบันทึกกินเอง" และเป็นเมนูที่ "มาจาก AI"
@@ -89,16 +90,16 @@ $days_met_goal    = count(array_filter($daily_data, fn($d) => $d['total'] >= $ta
 $max_day          = !empty($daily_data) ? max(array_column($daily_data, 'total')) : 0;
 $min_day          = !empty($daily_data) ? min(array_filter(array_column($daily_data, 'total'), fn($v) => $v > 0) ?: [0]) : 0;
 
-/* ── Meal type breakdown (last 7 days) ── */
+/* ── Meal type breakdown (dynamic range) ── */
 $meal_types = ['breakfast' => 0, 'lunch' => 0, 'dinner' => 0, 'snack' => 0];
 $mt_stmt = $conn->prepare(
     "SELECT ml.meal_type, COALESCE(SUM(r.calories),0) as total
      FROM meal_logs ml
      JOIN recipes r ON ml.recipe_id = r.id
-     WHERE ml.user_id = ? AND ml.logged_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+     WHERE ml.user_id = ? AND ml.logged_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
      GROUP BY ml.meal_type"
 );
-$mt_stmt->bind_param("i", $user_id);
+$mt_stmt->bind_param("ii", $user_id, $range_int);
 $mt_stmt->execute();
 $mt_res = $mt_stmt->get_result();
 while ($row = $mt_res->fetch_assoc()) {
@@ -106,31 +107,31 @@ while ($row = $mt_res->fetch_assoc()) {
 }
 $total_meal_cal = array_sum($meal_types);
 
-/* ── Top consumed recipes (last 30 days) ── */
+/* ── Top consumed recipes (dynamic range) ── */
 $top_stmt = $conn->prepare(
     "SELECT r.id, r.title, r.calories, COUNT(ml.id) as log_count, SUM(r.calories) as total_cal
      FROM meal_logs ml
      JOIN recipes r ON ml.recipe_id = r.id
-     WHERE ml.user_id = ? AND ml.logged_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+     WHERE ml.user_id = ? AND ml.logged_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
      GROUP BY r.id
      ORDER BY log_count DESC, total_cal DESC
      LIMIT 5"
 );
-$top_stmt->bind_param("i", $user_id);
+$top_stmt->bind_param("ii", $user_id, $range_int);
 $top_stmt->execute();
 $top_recipes = $top_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-/* ── Consistency score (days logged in last 30) ── */
+/* ── Consistency score (dynamic range) ── */
 // ดความสม่ำเสมอเฉพาะวันที่ "กดบันทึกการกิน" เท่านั้น
 $consistency_stmt = $conn->prepare(
     "SELECT COUNT(DISTINCT DATE(logged_at)) as days_logged
      FROM meal_logs 
-     WHERE user_id = ? AND logged_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+     WHERE user_id = ? AND logged_at >= DATE_SUB(NOW(), INTERVAL ? DAY)"
 );
-$consistency_stmt->bind_param("i", $user_id);
+$consistency_stmt->bind_param("ii", $user_id, $range_int);
 $consistency_stmt->execute();
 $days_logged = (int)$consistency_stmt->get_result()->fetch_assoc()['days_logged'];
-$consistency_pct = round($days_logged / 30 * 100);
+$consistency_pct = $range_int > 0 ? round($days_logged / $range_int * 100) : 0;
 
 /* ── Nutrition recommendations based on health conditions ── */
 $recommendations = [];
@@ -218,77 +219,126 @@ main {
 .gline{height:3px;background:linear-gradient(90deg,var(--g500),transparent);border-radius:99px;}
 
 /* Stats card */
-.stat-card{background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:20px;text-align:center;transition:all .2s;}
-.stat-card:hover{border-color:var(--g300);box-shadow:0 6px 20px rgba(34,197,94,.1);transform:translateY(-2px);}
-.stat-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin:0 auto 10px;}
-.stat-val{font-family:'Nunito',sans-serif;font-size:1.7rem;font-weight:800;color:var(--txt);line-height:1;}
-.stat-lbl{font-size:.7rem;color:var(--muted);margin-top:5px;letter-spacing:.02em;}
+.stat-card{background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:20px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.02);transition:all .2s;}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(34,197,94,.08);}
+.stat-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 12px;}
+.stat-val{font-family:'Nunito',sans-serif;font-size:1.8rem;font-weight:800;color:var(--txt);line-height:1.1;margin-bottom:2px;}
+.stat-lbl{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
 
-/* Chart bar */
-.chart-bar{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;cursor:pointer;transition:opacity .2s;}
-.chart-bar:hover{opacity:.85;}
-.bar-track{width:100%;background:var(--g50);border-radius:99px 99px 4px 4px;display:flex;flex-direction:column;justify-content:flex-end;height:140px;overflow:hidden;border:1px solid var(--bdr);position:relative;}
-.bar-stack{width:100%;border-radius:99px 99px 0 0;transition:height .6s cubic-bezier(.4,0,.2,1);}
-.bar-lbl{font-size:.62rem;color:var(--muted);font-weight:500;text-align:center;}
+/* Chart container */
+.chart-container{padding:24px;border-bottom:1px solid var(--bdr);}
+.chart-bars{display:flex;align-items:flex-end;height:220px;gap:8px;padding-top:20px;position:relative;}
+.chart-bg-lines{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none;z-index:0;padding-bottom:24px;}
+.bg-line{border-top:1px dashed #e5ede6;position:relative;}
+.bg-line span{position:absolute;left:-40px;top:-8px;font-size:.65rem;color:#cbd5e1;font-family:'Nunito',sans-serif;}
 
-/* Donut chart */
+.c-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1;height:100%;justify-content:flex-end;}
+.c-bar-wrap{width:100%;max-width:32px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;position:relative;border-radius:6px;background:var(--g50);cursor:pointer;}
+
+.c-bar-ai, .c-bar-rec{width:100%;transition:all .3s;}
+.c-bar-ai{background:linear-gradient(to top, var(--t500), var(--t400));border-radius:6px 6px 0 0;}
+.c-bar-rec{background:linear-gradient(to top, var(--g600), var(--g400));border-radius:0 0 6px 6px;}
+
+.c-bar-wrap:hover .c-bar-ai{background:var(--t600);}
+.c-bar-wrap:hover .c-bar-rec{background:var(--g700);}
+
+/* Tooltip */
+.c-tooltip{position:absolute;top:-45px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a2e1a;color:#fff;padding:6px 10px;border-radius:8px;font-size:.75rem;font-family:'Nunito',sans-serif;font-weight:700;pointer-events:none;opacity:0;transition:all .2s;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:10;}
+.c-tooltip::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);border-width:4px 4px 0;border-style:solid;border-color:#1a2e1a transparent transparent transparent;}
+.c-bar-wrap:hover .c-tooltip{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.c-date{font-size:.65rem;color:var(--muted);font-weight:500;}
+
+/* Target line */
+.target-line{position:absolute;left:0;right:0;border-top:2px dashed #f59e0b;z-index:5;pointer-events:none;display:flex;align-items:center;}
+.target-badge{background:#f59e0b;color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:8px;font-family:'Nunito',sans-serif;}
+
+/* Donut */
 .donut-wrap{position:relative;width:160px;height:160px;margin:0 auto;}
 .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-
-/* Legend */
-.legend-item{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--sub);}
-.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
-
-/* Recommendation card */
-.rec-card{background:#fff;border-left:4px solid;border-radius:14px;padding:14px 16px;transition:all .2s;}
-.rec-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06);transform:translateX(3px);}
-
-/* Top recipe row */
-.top-row{background:var(--g50);border:1px solid var(--bdr);border-radius:13px;padding:11px 14px;display:flex;align-items:center;gap:11px;transition:all .18s;}
-.top-row:hover{border-color:var(--g300);background:var(--g100);}
+.donut-num{font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;color:var(--txt);line-height:1;}
+.donut-lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px;}
+.leg-item{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--sub);}
+.leg-dot{width:10px;height:10px;border-radius:50%;}
 
 /* Range tabs */
-.range-tabs{display:flex;gap:6px;background:var(--g50);border-radius:12px;padding:4px;}
-.range-tab{padding:6px 16px;border-radius:9px;font-size:.75rem;font-weight:600;color:var(--sub);cursor:pointer;transition:all .18s;text-decoration:none;display:flex;align-items:center;gap:5px;}
-.range-tab:hover{background:rgba(255,255,255,.6);color:var(--g700);}
-.range-tab.active{background:#fff;color:var(--g600);box-shadow:0 2px 8px rgba(34,197,94,.12);}
+.range-tabs{display:flex;background:var(--g50);padding:4px;border-radius:12px;border:1px solid var(--bdr);}
+.range-tab{padding:6px 16px;font-size:.75rem;font-weight:600;color:var(--sub);text-decoration:none;border-radius:8px;transition:all .2s;}
+.range-tab:hover{color:var(--g600);}
+.range-tab.active{background:#fff;color:var(--g600);box-shadow:0 2px 6px rgba(0,0,0,.04);}
 
-::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px;}
-
-/* ── 🌟 Responsive CSS (ปรับปรุง Topbar ให้ยืดหยุ่น) ── */
-.menu-toggle { display: none; width: 38px; height: 38px; border-radius: 11px; background: white; border: 1px solid var(--bdr); align-items: center; justify-content: center; color: var(--sub); font-size: 0.9rem; cursor: pointer; flex-shrink: 0; margin-right: 10px; }
-
-@media (max-width: 1024px) {
-  .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-  .sidebar.show { transform: translateX(0); }
-  .page-wrap { margin-left: 0 !important; }
-  .menu-toggle { display: flex; }
-  .rv3, .rv4 { grid-template-columns: 1fr !important; } 
+.menu-toggle{display:none;background:none;border:none;font-size:1.2rem;color:var(--txt);cursor:pointer;}
+@media(max-width:992px){
+  :root{--sb-w:0px;}
+  .sidebar{transform:translateX(-100%);transition:transform .3s;width:260px;}
+  .sidebar.show{transform:translateX(0);}
+  .menu-toggle{display:block;}
+  .c-bar-wrap{max-width:20px;}
+  .c-date{font-size:.55rem;}
 }
-
-@media (max-width: 768px) {
-  main { padding: 1.5rem 1.2rem 3rem !important; }
-  .topbar { flex-wrap: wrap; height: auto; padding: 12px 1.5rem; gap: 10px; }
-  .rv2 { grid-template-columns: repeat(2, 1fr) !important; } 
-  .rv5 > div { grid-template-columns: 1fr !important; } 
-}
-
-@media (max-width: 480px) {
-  .topbar { padding: 12px 1rem; }
-  /* ดันแท็บ 7, 14, 30 วัน ลงบรรทัดใหม่และขยายเต็ม */
-  .topbar > div:last-child { width: 100%; margin-top: 5px; display: flex; justify-content: flex-start; }
-  .range-tabs { width: 100%; justify-content: space-between; }
-  .range-tab { flex: 1; text-align: center; justify-content: center; }
-  .rv2 { grid-template-columns: 1fr !important; } 
+@media(max-width:768px){
+  .rv2 { grid-template-columns: 1fr 1fr; }
+  main{padding:1.5rem 1rem;}
+  .topbar{padding:0 1rem;}
+  .grid-layout{grid-template-columns:1fr !important;}
 }
 </style>
 </head>
 <body>
 
-<?php include '../includes/sidebar.php' ?>
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon"><i class="fas fa-leaf text-white"></i></div>
+    <div>
+      <div class="sb-logo-text">FoodAI</div>
+      <div class="sb-logo-sub">Nutrition Guide</div>
+    </div>
+  </div>
+  
+  <div class="sb-label">Menu</div>
+  <nav class="sb-nav">
+    <a href="dashboard.php" class="nav-item">
+      <div class="ni"><i class="fas fa-home"></i></div>
+      หน้าหลัก
+    </a>
+    <a href="ai_recommend.php" class="nav-item">
+      <div class="ni"><i class="fas fa-magic"></i></div>
+      AI จัดมื้ออาหาร
+    </a>
+    <a href="food_detect.php" class="nav-item">
+      <div class="ni"><i class="fas fa-camera"></i></div>
+      AI วิเคราะห์อาหาร
+    </a>
+    <a href="meal_log.php" class="nav-item">
+      <div class="ni"><i class="fas fa-book-open"></i></div>
+      บันทึกการกิน
+    </a>
+    <a href="nutrition.php" class="nav-item active">
+      <div class="ni"><i class="fas fa-chart-pie"></i></div>
+      สรุปโภชนาการ
+    </a>
+    <a href="recipes.php" class="nav-item">
+      <div class="ni"><i class="fas fa-utensils"></i></div>
+      สูตรอาหาร
+    </a>
+    <a href="health_profile.php" class="nav-item">
+      <div class="ni"><i class="fas fa-heartbeat"></i></div>
+      ข้อมูลสุขภาพ
+    </a>
+  </nav>
+
+  <div class="sb-user">
+    <div class="sb-av"><?= $initials ?></div>
+    <div>
+      <div class="sb-un"><?= htmlspecialchars($firstName) ?></div>
+      <div style="font-size:.65rem;color:var(--muted);"><?= $targetCal ?> kcal/day</div>
+    </div>
+    <a href="logout.php" class="sb-out" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></a>
+  </div>
+</aside>
 
 <div class="page-wrap">
-
   <header class="topbar">
     <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
       <i class="fas fa-bars"></i>
@@ -300,7 +350,7 @@ main {
     </div>
     <div style="margin-left:auto;">
       <div class="range-tabs">
-        <a href="?range=7"  class="range-tab <?= $range==='7' ?'active':'' ?>">7 วัน</a>
+        <a href="?range=7" class="range-tab <?= $range==='7' ?'active':'' ?>">7 วัน</a>
         <a href="?range=14" class="range-tab <?= $range==='14'?'active':'' ?>">14 วัน</a>
         <a href="?range=30" class="range-tab <?= $range==='30'?'active':'' ?>">30 วัน</a>
       </div>
@@ -308,7 +358,6 @@ main {
   </header>
 
   <main>
-
     <div class="rv rv1" style="margin-bottom:1.8rem;">
       <p style="font-size:.72rem;color:var(--muted);margin-bottom:3px;">การวิเคราะห์</p>
       <h1 style="font-family:'Nunito',sans-serif;font-size:1.6rem;font-weight:800;color:var(--txt);line-height:1.1;">
@@ -318,284 +367,262 @@ main {
     </div>
 
     <div class="rv rv2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:2rem;">
-      
       <div class="stat-card">
-        <div class="stat-icon" style="background:#f0fdf4;border:1px solid var(--g200);"><i class="bi bi-bar-chart-line-fill" style="color: #22c55e;"></i></div>
-        <div class="stat-val" style="color:var(--g600);"><?= number_format($avg_cal_day) ?></div>
-        <div class="stat-lbl">ค่าเฉลี่ย/วัน (kcal)</div>
+        <div class="stat-icon" style="background:#f0fdf4;border:1px solid var(--g200);color:var(--g600);">
+          <i class="fas fa-fire"></i>
+        </div>
+        <div class="stat-val"><?= number_format($avg_cal_day) ?></div>
+        <div class="stat-lbl">เฉลี่ย Kcal/วัน</div>
       </div>
-
       <div class="stat-card">
-        <div class="stat-icon" style="background:#fefce8;border:1px solid #fde68a;"><i class="fa fa-bullseye" style="color: #ff5722;"></i></div>
-        <div class="stat-val" style="color:#ca8a04;"><?= $days_met_goal ?><span style="font-size:1rem;color:var(--muted);">/<?= $range ?></span></div>
-        <div class="stat-lbl">วันที่ถึงเป้า</div>
+        <div class="stat-icon" style="background:#fef3c7;border:1px solid #fde68a;color:#d97706;">
+          <i class="fas fa-trophy"></i>
+        </div>
+        <div class="stat-val"><?= $days_met_goal ?> <span style="font-size:1rem;color:var(--muted);">/<?= $range ?></span></div>
+        <div class="stat-lbl">วันที่ถึงเป้าหมาย</div>
       </div>
-
       <div class="stat-card">
-        <div class="stat-icon" style="background:#eff6ff;border:1px solid #bfdbfe;"><i class="bi bi-fire" style="color: #ff5722;"></i></div>
-        <div class="stat-val" style="color:#2563eb;"><?= number_format($max_day) ?></div>
-        <div class="stat-lbl">สูงสุด (kcal)</div>
+        <div class="stat-icon" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;">
+          <i class="fas fa-arrow-up"></i>
+        </div>
+        <div class="stat-val"><?= number_format($max_day) ?></div>
+        <div class="stat-lbl">กินเยอะสุด (Kcal)</div>
       </div>
-
       <div class="stat-card">
-        <div class="stat-icon" style="background:#f0fdf4;border:1px solid var(--g200);"><i class="bi bi-check-square-fill" style="color: #22c55e"></i></div>
-        <div class="stat-val" style="color:var(--t600);"><?= $consistency_pct ?><span style="font-size:1rem;color:var(--muted);">%</span></div>
-        <div class="stat-lbl">ความสม่ำเสมอ (30 วัน)</div>
+        <div class="stat-icon" style="background:#faf5ff;border:1px solid #e9d5ff;color:#9333ea;">
+          <i class="fas fa-arrow-down"></i>
+        </div>
+        <div class="stat-val"><?= number_format($min_day) ?></div>
+        <div class="stat-lbl">กินน้อยสุด (Kcal)</div>
       </div>
-
     </div>
 
-    <div class="rv rv3" style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;margin-bottom:2rem;">
-
-      <div class="card" style="padding:24px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-          <h2 class="stitle"><i class="bi bi-graph-up" style="color: #22c55e;"></i> แคลอรี่ที่บันทึกรายวัน</h2>
-          <div style="display:flex;gap:12px;font-size:.68rem;">
-            <div style="display:flex;align-items:center;gap:5px;">
-              <!-- ✅ สีฟ้าเทอร์ควอยซ์ -->
-              <div style="width:10px;height:10px;border-radius:2px;background:linear-gradient(135deg, #5eead4, #14b8a6);"></div>
-              <span style="color:var(--muted);">เมนูจาก AI</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:5px;">
-              <!-- ✅ สีเขียวสด -->
-              <div style="width:10px;height:10px;border-radius:2px;background:linear-gradient(135deg, #4ade80, #22c55e);"></div>
-              <span style="color:var(--muted);">เมนูทั่วไป</span>
-            </div>
+    <div class="rv rv3 card" style="margin-bottom:2rem;">
+      <div style="padding:20px 24px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;">
+        <h2 class="stitle"><i class="fas fa-chart-bar" style="color: var(--g500);"></i> ปริมาณแคลอรี่รายวัน</h2>
+        <div style="display:flex;gap:16px;font-size:.75rem;color:var(--sub);">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:12px;height:12px;border-radius:3px;background:var(--g500);"></div> เมนูทั่วไป
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:12px;height:12px;border-radius:3px;background:var(--t500);"></div> จัดโดย AI
           </div>
         </div>
-
-        <div style="display:flex;gap:4px;align-items:flex-end;height:160px;margin-bottom:12px;">
-          <?php foreach ($daily_data as $dd):
-            $ai_h  = $max_chart > 0 ? max(4, round($dd['ai_cal'] / $max_chart * 140)) : 4;
-            $rec_h = $max_chart > 0 ? max(4, round($dd['rec_cal'] / $max_chart * 140)) : 4;
-            $total_h = $ai_h + $rec_h;
+      </div>
+      
+      <div class="chart-container">
+        <div class="chart-bars">
+          <div class="chart-bg-lines">
+            <div class="bg-line"><span><?= number_format($max_chart) ?></span></div>
+            <div class="bg-line"><span><?= number_format($max_chart*0.75) ?></span></div>
+            <div class="bg-line"><span><?= number_format($max_chart*0.5) ?></span></div>
+            <div class="bg-line"><span><?= number_format($max_chart*0.25) ?></span></div>
+            <div class="bg-line" style="border-top-color:var(--bdr);"><span>0</span></div>
+          </div>
+          
+          <?php if($targetCal > 0 && $max_chart > 0): 
+            $t_pct = min(100, ($targetCal / $max_chart) * 100);
           ?>
-          <div class="chart-bar" title="<?= $dd['date_short'] ?>: <?= number_format($dd['total']) ?> kcal (AI: <?= number_format($dd['ai_cal']) ?>, ทั่วไป: <?= number_format($dd['rec_cal']) ?>)">
-            <div class="bar-track">
-              <?php if ($dd['rec_cal'] > 0): ?>
-              <!-- ✅ เมนูทั่วไป: สีเขียวอ่อน #4ade80 -->
-              <div class="bar-stack" style="height:<?= $rec_h ?>px;background:linear-gradient(180deg, #4ade80, #22c55e);border-radius:0 0 3px 3px;"></div>
+          <div class="target-line" style="bottom:<?= $t_pct ?>%;">
+            <div class="target-badge">เป้าหมาย <?= number_format($targetCal) ?></div>
+          </div>
+          <?php endif; ?>
+
+          <?php foreach ($daily_data as $idx => $d): 
+            $h_rec = $max_chart > 0 ? ($d['rec_cal'] / $max_chart * 100) : 0;
+            $h_ai  = $max_chart > 0 ? ($d['ai_cal'] / $max_chart * 100) : 0;
+            // ซ่อน label วันที่บ้างถ้าแสดง 30 วันแล้วมันแน่นไป
+            $show_date = ($range <= 14) || ($idx % 2 == 0);
+          ?>
+          <div class="c-col">
+            <div class="c-bar-wrap">
+              <div class="c-tooltip"><?= number_format($d['total']) ?> kcal</div>
+              <?php if($h_ai > 0): ?>
+              <div class="c-bar-ai" style="height:<?= $h_ai ?>%;"></div>
               <?php endif; ?>
-              
-              <?php if ($dd['ai_cal'] > 0): ?>
-              <!-- ✅ เมนูจาก AI: สีฟ้าเทอร์ควอยซ์ #14b8a6 -->
-              <div class="bar-stack" style="height:<?= $ai_h ?>px;background:linear-gradient(180deg, #5eead4, #14b8a6);border-radius:<?= $dd['rec_cal'] > 0 ? '0' : '0 0 3px 3px' ?>;"></div>
+              <?php if($h_rec > 0): ?>
+              <div class="c-bar-rec" style="height:<?= $h_rec ?>%; <?= $h_ai > 0 ? 'border-radius:0 0 6px 6px;' : 'border-radius:6px;' ?>"></div>
               <?php endif; ?>
             </div>
-            <span class="bar-lbl"><?= date('j/n', strtotime($dd['date'])) ?></span>
+            <div class="c-date"><?= $show_date ? $d['date_short'] : '' ?></div>
           </div>
           <?php endforeach; ?>
         </div>
-
-        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--bdr);padding-top:14px;">
-          <span style="font-size:.7rem;color:var(--muted);">เป้าหมายรายวัน: <strong style="color:var(--g600);"><?= number_format($targetCal) ?> kcal</strong></span>
-          <span style="font-size:.7rem;color:var(--muted);">รวม <?= $days_with_records ?> วันที่บันทึก: <strong style="color:var(--txt);"><?= number_format($total_cal_period) ?> kcal</strong></span>
-        </div>
       </div>
+    </div>
 
-      <div class="card" style="padding:24px;">
-        <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-utensils" style="color: #22c55e;"></i> สัดส่วนมื้ออาหาร</h2>
-        <p style="font-size:.7rem;color:var(--muted);margin-bottom:16px;">7 วันที่ผ่านมา</p>
-
-        <?php
-        $meal_colors = [
-          'breakfast' => '#f59e0b',
-          'lunch'     => '#22c55e',
-          'dinner'    => '#6366f1',
-          'snack'     => '#f97316'
-        ];
-        $meal_labels = [
-          'breakfast' => 'มื้อเช้า',
-          'lunch'     => 'มื้อกลางวัน',
-          'dinner'    => 'มื้อเย็น',
-          'snack'     => 'ของว่าง'
-        ];
-
-        // Calculate angles for donut
-        $angles = [];
-        $start_angle = -90;
-        foreach ($meal_types as $mt => $cal) {
-            $pct = $total_meal_cal > 0 ? $cal / $total_meal_cal : 0;
-            $angle = $pct * 360;
-            $angles[$mt] = [
-                'start' => $start_angle,
-                'angle' => $angle,
-                'pct' => round($pct * 100)
-            ];
-            $start_angle += $angle;
-        }
-        ?>
-
-        <div class="donut-wrap">
-          <svg viewBox="0 0 160 160" width="160" height="160">
-            <?php
-            $cx = 80; $cy = 80; $r = 65; $stroke = 22;
-            $circumference = 2 * pi() * $r;
-            foreach ($meal_types as $mt => $cal):
+    <div class="grid-layout" style="display:grid;grid-template-columns:300px 1fr 300px;gap:20px;">
+      
+      <div class="rv rv4" style="display:flex;flex-direction:column;gap:20px;">
+        
+        <div class="card" style="padding:24px;">
+          <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-utensils" style="color: #22c55e;"></i> สัดส่วนมื้ออาหาร</h2>
+          <p style="font-size:.7rem;color:var(--muted);margin-bottom:16px;"><?= $range ?> วันที่ผ่านมา</p>
+          
+          <?php
+          $meal_colors = [
+            'breakfast' => '#f59e0b',
+            'lunch' => '#22c55e',
+            'dinner' => '#6366f1',
+            'snack' => '#f97316'
+          ];
+          $meal_labels = [
+            'breakfast' => 'มื้อเช้า',
+            'lunch' => 'มื้อกลางวัน',
+            'dinner' => 'มื้อเย็น',
+            'snack' => 'ของว่าง'
+          ];
+          
+          // Calculate angles for donut
+          $angles = [];
+          $start_angle = -90;
+          foreach ($meal_types as $mt => $cal) {
+              $pct = $total_meal_cal > 0 ? $cal / $total_meal_cal : 0;
+              $angle = $pct * 360;
+              $angles[$mt] = [
+                  'start' => $start_angle,
+                  'angle' => $angle,
+                  'pct' => round($pct * 100)
+              ];
+              $start_angle += $angle;
+          }
+          ?>
+          
+          <div class="donut-wrap">
+            <svg viewBox="0 0 160 160" width="160" height="160">
+              <?php
+              $cx = 80; $cy = 80; $r = 65; $stroke = 22;
+              $circumference = 2 * pi() * $r;
+              foreach ($meal_types as $mt => $cal):
                 if ($cal <= 0) continue;
                 $a = $angles[$mt];
-                $dash = $a['pct'] / 100 * $circumference;
-                $gap  = $circumference - $dash;
-                $rotate = $a['start'];
-            ?>
-            <circle cx="<?= $cx ?>" cy="<?= $cy ?>" r="<?= $r ?>"
-                    fill="none" stroke="<?= $meal_colors[$mt] ?>" stroke-width="<?= $stroke ?>"
-                    stroke-dasharray="<?= $dash ?> <?= $gap ?>"
-                    transform="rotate(<?= $rotate ?> <?= $cx ?> <?= $cy ?>)"
-                    style="transition:stroke-dasharray .6s ease;"/>
+                $dasharray = ($a['angle'] / 360 * $circumference) . " " . $circumference;
+              ?>
+              <circle cx="<?= $cx ?>" cy="<?= $cy ?>" r="<?= $r ?>" 
+                      fill="transparent" 
+                      stroke="<?= $meal_colors[$mt] ?>" 
+                      stroke-width="<?= $stroke ?>" 
+                      stroke-dasharray="<?= $dasharray ?>"
+                      transform="rotate(<?= $a['start'] ?> <?= $cx ?> <?= $cy ?>)"
+                      style="transition:all 1s ease;" />
+              <?php endforeach; ?>
+              
+              <?php if($total_meal_cal == 0): ?>
+              <circle cx="80" cy="80" r="65" fill="transparent" stroke="#f1f5f9" stroke-width="22" />
+              <?php endif; ?>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-num"><?= number_format($total_meal_cal) ?></div>
+              <div class="donut-lbl">Kcal รวม</div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <?php foreach($meal_types as $mt => $cal): ?>
+            <div class="leg-item">
+              <div class="leg-dot" style="background:<?= $meal_colors[$mt] ?>;"></div>
+              <div>
+                <div style="font-weight:600;color:var(--txt);line-height:1.2;"><?= $meal_labels[$mt] ?></div>
+                <div style="font-size:.7rem;"><?= $angles[$mt]['pct'] ?? 0 ?>% (<?= number_format($cal) ?>)</div>
+              </div>
+            </div>
             <?php endforeach; ?>
-          </svg>
-          <div class="donut-center">
-            <span style="font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;color:var(--txt);line-height:1;">
-              <?= number_format($total_meal_cal) ?>
-            </span>
-            <span style="font-size:.6rem;color:var(--muted);margin-top:2px;">kcal รวม</span>
           </div>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:9px;margin-top:18px;">
-          <?php foreach ($meal_types as $mt => $cal):
-            if ($cal <= 0) continue;
-            $pct = $total_meal_cal > 0 ? round($cal / $total_meal_cal * 100) : 0;
-          ?>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div class="legend-item">
-              <span class="legend-dot" style="background:<?= $meal_colors[$mt] ?>;"></span>
-              <span><?= $meal_labels[$mt] ?></span>
-            </div>
-            <span style="font-size:.75rem;font-weight:700;color:var(--txt);"><?= $pct ?>%</span>
-          </div>
-          <?php endforeach; ?>
-          <?php if ($total_meal_cal === 0): ?>
-          <p style="text-align:center;font-size:.78rem;color:var(--muted);padding:1rem 0;">ยังไม่มีข้อมูล</p>
-          <?php endif; ?>
-        </div>
       </div>
 
-    </div>
-
-    <div class="rv rv4" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:2rem;">
-
-      <div class="card" style="padding:24px;">
-        <h2 class="stitle" style="margin-bottom:18px;">💡 คำแนะนำสุขภาพ</h2>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <?php foreach ($recommendations as $rec): ?>
-          <div class="rec-card" style="border-color:<?= $rec['color'] ?>;">
-            <div style="display:flex;align-items:flex-start;gap:12px;">
-              <span style="font-size:1.8rem;flex-shrink:0;"><?= $rec['icon'] ?></span>
-              <div style="flex:1;">
-                <div style="font-size:.88rem;font-weight:700;color:var(--txt);margin-bottom:3px;"><?= $rec['title'] ?></div>
-                <div style="font-size:.75rem;color:var(--muted);line-height:1.6;"><?= $rec['text'] ?></div>
+      <div class="rv rv5">
+        <div class="card" style="padding:24px;height:100%;">
+          <h2 class="stitle" style="margin-bottom:6px;"><i class="fas fa-lightbulb" style="color: #eab308;"></i> คำแนะนำสำหรับคุณ</h2>
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:20px;line-height:1.5;">
+            วิเคราะห์จากเป้าหมาย <strong><?= number_format($targetCal) ?> kcal</strong><br>
+            และปัญหาสุขภาพ: <strong><?= htmlspecialchars($conditions) ?></strong>
+          </p>
+          
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <?php foreach($recommendations as $rec): ?>
+            <div style="display:flex;gap:14px;padding:16px;background:var(--g50);border:1px solid var(--bdr);border-radius:14px;align-items:flex-start;">
+              <div style="width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 2px 6px rgba(0,0,0,.03);flex-shrink:0;">
+                <?= $rec['icon'] ?>
+              </div>
+              <div>
+                <div style="font-size:.85rem;font-weight:700;color:<?= $rec['color'] ?>;margin-bottom:3px;"><?= $rec['title'] ?></div>
+                <div style="font-size:.8rem;color:var(--sub);line-height:1.5;"><?= $rec['text'] ?></div>
               </div>
             </div>
-          </div>
-          <?php endforeach; ?>
-
-          <div style="background:var(--g50);border:1px solid var(--g200);border-radius:13px;padding:14px;margin-top:6px;">
-            <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px;">
-              <i class="fas fa-info-circle" style="color:var(--g600);font-size:.9rem;"></i>
-              <span style="font-size:.78rem;font-weight:700;color:var(--g700);">ข้อมูลสุขภาพของคุณ</span>
-            </div>
-            <div style="font-size:.72rem;color:var(--sub);line-height:1.65;">
-              <strong>โรคประจำตัว:</strong> <?= htmlspecialchars($conditions) ?><br>
-              <strong>รูปแบบการกิน:</strong> <?= htmlspecialchars($dietType) ?>
-            </div>
+            <?php endforeach; ?>
+            
+            <?php 
+            // Add dynamic insight based on data
+            if ($avg_cal_day > $targetCal + 200) {
+                echo '<div style="padding:14px;background:#fee2e2;border:1px solid #fecaca;border-radius:12px;font-size:.8rem;color:#b91c1c;margin-top:8px;">
+                      <i class="fas fa-exclamation-triangle"></i> ช่วงนี้คุณรับประทานเกินเป้าหมายเฉลี่ย '.number_format($avg_cal_day - $targetCal).' kcal/วัน ลองลดปริมาณของว่างหรือคาร์โบไฮเดรตลงเล็กน้อย
+                      </div>';
+            } elseif ($avg_cal_day > 0 && $avg_cal_day < $targetCal - 300) {
+                echo '<div style="padding:14px;background:#fef3c7;border:1px solid #fde68a;border-radius:12px;font-size:.8rem;color:#b45309;margin-top:8px;">
+                      <i class="fas fa-info-circle"></i> คุณรับประทานน้อยกว่าเป้าหมายค่อนข้างมาก ระวังร่างกายขาดสารอาหารที่จำเป็น
+                      </div>';
+            }
+            ?>
           </div>
         </div>
       </div>
 
-      <div class="card" style="padding:24px;">
-        <h2 class="stitle" style="margin-bottom:18px;"><i class="bi bi-fire" style="color: #ff5722;"></i> เมนูที่บันทึกบ่อย</h2>
-        <p style="font-size:.7rem;color:var(--muted);margin-bottom:14px;">30 วันที่ผ่านมา</p>
-
-        <?php if (count($top_recipes) > 0): ?>
-        <div style="display:flex;flex-direction:column;gap:9px;">
-          <?php foreach ($top_recipes as $idx => $tr): ?>
-          <a href="recipe_detail.php?id=<?= $tr['id'] ?>" class="top-row" style="text-decoration:none;">
-            <span style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;color:var(--g600);min-width:26px;">
-              #<?= $idx + 1 ?>
-            </span>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:.83rem;font-weight:600;color:var(--txt);line-height:1.4;">
-                <?= htmlspecialchars($tr['title']) ?>
-              </div>
-              <div style="font-size:.68rem;color:var(--muted);margin-top:2px;">
-                บันทึก <?= $tr['log_count'] ?> ครั้ง • <?= number_format($tr['total_cal']) ?> kcal รวม
-              </div>
-            </div>
-            <i class="fas fa-chevron-right" style="color:var(--muted);font-size:.7rem;"></i>
-          </a>
-          <?php endforeach; ?>
-        </div>
-        <?php else: ?>
-        <div style="text-align:center;padding:2rem 1rem;border:2px dashed var(--g200);border-radius:14px;">
-          <div style="font-size:2rem;opacity:.2;margin-bottom:10px;"><i class="bi bi-bar-chart-line-fill" style="color: #22c55e;"></i></div>
-          <p style="font-size:.82rem;color:var(--muted);">ยังไม่มีข้อมูลสถิติ</p>
-          <p style="font-size:.72rem;color:var(--muted);margin-top:4px;">เริ่มบันทึกเมนูอาหารของคุณ</p>
-        </div>
-        <?php endif; ?>
-      </div>
-
-    </div>
-
-    <div class="rv rv5 card" style="padding:28px;">
-      <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-clipboard-list" style="color: #22c55e;"></i> สรุปภาพรวม</h2>
-      
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+      <div class="rv rv6" style="display:flex;flex-direction:column;gap:20px;">
         
-        <div style="background:var(--g50);border-radius:14px;padding:18px;">
-          <div style="font-size:.7rem;color:var(--muted);margin-bottom:8px;font-weight:600;letter-spacing:.04em;">CONSISTENCY SCORE</div>
-          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px;">
-            <span style="font-family:'Nunito',sans-serif;font-size:2.2rem;font-weight:800;color:var(--g600);line-height:1;"><?= $consistency_pct ?></span>
-            <span style="font-size:.9rem;color:var(--muted);">%</span>
+        <div class="card" style="padding:24px;">
+          <h2 class="stitle" style="margin-bottom:14px;"><i class="fas fa-fire-alt" style="color: #ff5722;"></i> เมนูที่บันทึกบ่อย</h2>
+          <p style="font-size:.7rem;color:var(--muted);margin-bottom:14px;"><?= $range ?> วันที่ผ่านมา</p>
+          
+          <?php if (count($top_recipes) > 0): ?>
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            <?php foreach ($top_recipes as $idx => $tr): ?>
+            <a href="recipe_detail.php?id=<?= $tr['id'] ?>" class="top-row" style="text-decoration:none;">
+              <span style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;color:var(--g600);min-width:26px;">
+                #<?= $idx + 1 ?>
+              </span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:.83rem;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  <?= htmlspecialchars($tr['title']) ?>
+                </div>
+                <div style="font-size:.7rem;color:var(--muted);">
+                  กินไป <?= $tr['log_count'] ?> ครั้ง &bull; <?= number_format($tr['total_cal']) ?> kcal
+                </div>
+              </div>
+            </a>
+            <?php endforeach; ?>
           </div>
-          <div style="height:6px;background:rgba(34,197,94,.15);border-radius:99px;overflow:hidden;">
-            <div style="width:<?= $consistency_pct ?>%;height:100%;background:var(--g500);border-radius:99px;"></div>
+          <?php else: ?>
+          <div style="text-align:center;padding:20px 0;">
+            <i class="fas fa-utensils" style="font-size:1.5rem;color:var(--g200);margin-bottom:8px;"></i>
+            <p style="font-size:.75rem;color:var(--muted);">ยังไม่มีข้อมูล</p>
           </div>
-          <p style="font-size:.7rem;color:var(--sub);margin-top:10px;line-height:1.55;">
-            <?php if ($consistency_pct >= 80): ?>
-            เยี่ยมมาก! คุณบันทึกอย่างสม่ำเสมอ
-            <?php elseif ($consistency_pct >= 50): ?>
-            ดีมาก ลองบันทึกให้ได้ทุกวันนะ
-            <?php else: ?>
-            ลองบันทึกให้สม่ำเสมอมากขึ้น
-            <?php endif; ?>
-          </p>
+          <?php endif; ?>
+          <style>
+            .top-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--g50);border:1px solid transparent;transition:all .2s;}
+            .top-row:hover{background:#fff;border-color:var(--g300);transform:translateY(-2px);box-shadow:0 4px 12px rgba(34,197,94,.1);}
+          </style>
         </div>
 
-        <div style="background:#fefce8;border-radius:14px;padding:18px;">
-          <div style="font-size:.7rem;color:#a16207;margin-bottom:8px;font-weight:600;letter-spacing:.04em;">GOAL ACHIEVEMENT</div>
-          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px;">
-            <span style="font-family:'Nunito',sans-serif;font-size:2.2rem;font-weight:800;color:#ca8a04;line-height:1;"><?= $days_met_goal ?></span>
-            <span style="font-size:.9rem;color:#a16207;">/ <?= $range ?> วัน</span>
+        <div class="card" style="padding:24px;">
+          <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-calendar-check" style="color: #3b82f6;"></i> วินัยการกิน</h2>
+          <p style="font-size:.7rem;color:var(--muted);margin-bottom:18px;">ความสม่ำเสมอใน <?= $range ?> วัน</p>
+          
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;">
+            <span style="font-family:'Nunito',sans-serif;font-size:2.8rem;font-weight:800;color:#3b82f6;line-height:1;"><?= $consistency_pct ?></span>
+            <span style="font-size:1rem;color:var(--muted);font-weight:600;">%</span>
           </div>
-          <div style="height:6px;background:rgba(202,138,4,.15);border-radius:99px;overflow:hidden;">
-            <div style="width:<?= $range>0?round($days_met_goal/$range*100):0 ?>%;height:100%;background:#eab308;border-radius:99px;"></div>
+          <div style="width:100%;height:8px;background:#eff6ff;border-radius:99px;overflow:hidden;">
+            <div style="width:<?= $consistency_pct ?>%;height:100%;background:linear-gradient(90deg,#60a5fa,#3b82f6);border-radius:99px;"></div>
           </div>
-          <p style="font-size:.7rem;color:#854d0e;margin-top:10px;line-height:1.55;">
-            <?php if ($days_met_goal >= $range * 0.8): ?>
-            สุดยอด! ถึงเป้าหมายเกือบทุกวัน
-            <?php else: ?>
-            มุ่งมั่นต่อไปนะ เป้าหมายใกล้แล้ว
-            <?php endif; ?>
-          </p>
-        </div>
-
-        <div style="background:#eff6ff;border-radius:14px;padding:18px;">
-          <div style="font-size:.7rem;color:#1e40af;margin-bottom:8px;font-weight:600;letter-spacing:.04em;">AVG CALORIES/DAY</div>
-          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px;">
-            <span style="font-family:'Nunito',sans-serif;font-size:2.2rem;font-weight:800;color:#2563eb;line-height:1;"><?= number_format($avg_cal_day) ?></span>
-            <span style="font-size:.9rem;color:#1e40af;">kcal</span>
+          <div style="font-size:.75rem;color:var(--sub);margin-top:12px;text-align:center;">
+            บันทึกอาหารแล้ว <strong><?= $days_logged ?></strong> จาก <?= $range ?> วัน
           </div>
-          <div style="height:6px;background:rgba(37,99,235,.15);border-radius:99px;overflow:hidden;">
-            <div style="width:<?= $targetCal>0?min(100,round($avg_cal_day/$targetCal*100)):0 ?>%;height:100%;background:#3b82f6;border-radius:99px;"></div>
-          </div>
-          <p style="font-size:.7rem;color:#1e3a8a;margin-top:10px;line-height:1.55;">
-            เป้าหมาย <?= number_format($targetCal) ?> kcal/วัน
-          </p>
         </div>
 
       </div>
+
     </div>
 
   </main>
