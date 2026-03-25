@@ -92,15 +92,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $ai_data = $ai_fetch->get_result()->fetch_assoc();
             
             if ($ai_data) {
-                // เช็คว่ามีเมนู AI นี้ในตาราง recipes หลักหรือยัง
-                $check_r = $conn->prepare("SELECT id FROM recipes WHERE title = ? AND calories = ? LIMIT 1");
-                $check_r->bind_param("si", $ai_data['menu_name'], $ai_data['calories']);
+                // ✅ แก้ไข: เช็คแค่ "ชื่อเมนู" เพื่อป้องกันการสร้างเมนูซ้ำใน Database
+                $check_r = $conn->prepare("SELECT id FROM recipes WHERE title = ? LIMIT 1");
+                $check_r->bind_param("s", $ai_data['menu_name']);
                 $check_r->execute();
                 $res_r = $check_r->get_result();
                 
                 if ($res_r->num_rows > 0) {
+                    // ถ้ามีเมนูชื่อนี้อยู่แล้ว -> ดึง ID เดิมมาใช้เลย (ไม่สร้างซ้ำ!)
                     $rid = $res_r->fetch_assoc()['id'];
                 } else {
+                    // ถ้าไม่เคยมีเลยจริงๆ -> ถึงจะสร้างใหม่ 1 ครั้งเพื่อให้มีแคลอรี่ไปคำนวณ
                     $empty_str = '';
                     $ins = $conn->prepare("INSERT INTO recipes (title, description, instructions, calories) VALUES (?, ?, ?, ?)");
                     $ins->bind_param("sssi", $ai_data['menu_name'], $ai_data['description'], $empty_str, $ai_data['calories']);
@@ -115,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $rid = (int)$rid_raw;
         }
 
-        // ✅ แก้ไข: ลบระบบ Update ของเก่าทิ้ง ใช้เป็นการ INSERT (สร้างบรรทัดใหม่) เสมอ
+        // บันทึกประวัติการกินลง meal_log เสมอ โดยไม่ลบของเก่า
         $stmt = $conn->prepare("INSERT INTO meal_logs (user_id, recipe_id, meal_type, logged_at) VALUES (?,?,?,?)");
         $stmt->bind_param("iiss", $user_id, $rid, $meal_type, $logged_at);
         $stmt->execute();
