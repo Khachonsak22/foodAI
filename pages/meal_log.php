@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $rid_raw   = $_POST['recipe_id'];
         $meal_type = $_POST['meal_type'] ?? 'lunch';
         
-        // 🌟 รับค่าวันที่จากหน้าเว็บ เพื่อให้การบันทึกย้อนหลังถูกต้องเสมอ
+        // รับค่าวันที่จากหน้าเว็บ เพื่อให้การบันทึกย้อนหลังถูกต้องเสมอ
         $log_date  = $_POST['log_date'] ?? date('Y-m-d');
         $log_time  = date('H:i:s');
         $logged_at = $log_date . ' ' . $log_time;
@@ -60,15 +60,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $ai_data = $ai_fetch->get_result()->fetch_assoc();
             
             if ($ai_data) {
-                $empty_str = '';
-                $ins = $conn->prepare("INSERT INTO recipes (title, description, instructions, calories) VALUES (?, ?, ?, ?)");
-                $ins->bind_param("sssi", $ai_data['menu_name'], $ai_data['description'], $empty_str, $ai_data['calories']);
-                $ins->execute();
-                $rid = $conn->insert_id;
+                // เช็คว่าเคยเพิ่มเมนูนี้ไปในตาราง recipes หรือยัง จะได้ไม่เพิ่มซ้ำซ้อน
+                $check_r = $conn->prepare("SELECT id FROM recipes WHERE title = ? AND calories = ? LIMIT 1");
+                $check_r->bind_param("si", $ai_data['menu_name'], $ai_data['calories']);
+                $check_r->execute();
+                $res_r = $check_r->get_result();
                 
-                $del = $conn->prepare("DELETE FROM ai_saved_menus WHERE id = ?");
-                $del->bind_param("i", $ai_id);
-                $del->execute();
+                if ($res_r->num_rows > 0) {
+                    $rid = $res_r->fetch_assoc()['id'];
+                } else {
+                    $empty_str = '';
+                    $ins = $conn->prepare("INSERT INTO recipes (title, description, instructions, calories) VALUES (?, ?, ?, ?)");
+                    $ins->bind_param("sssi", $ai_data['menu_name'], $ai_data['description'], $empty_str, $ai_data['calories']);
+                    $ins->execute();
+                    $rid = $conn->insert_id;
+                }
+                
             } else {
                 echo json_encode(['status' => 'error']);
                 exit();
