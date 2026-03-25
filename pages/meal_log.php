@@ -38,9 +38,41 @@ $selected_date = isset($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_G
 $today = date('Y-m-d');
 
 /* ── Handle quick-log from recipes & AI menus (POST) ── */
+/* ── Handle AJAX actions ── */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
     $action = $_POST['action'];
+
+    if ($action === 'add_to_log') {
+        $recipe_id = (int)$_POST['recipe_id'];
+        $meal_type = $_POST['meal_type'] ?? 'lunch';
+        $log_date  = $_POST['log_date'] ?? date('Y-m-d');
+        $log_time  = date('H:i:s');
+        $logged_at = $log_date . ' ' . $log_time;
+
+        // ✅ แก้ไข: ลบระบบ Update ของเก่าทิ้ง ใช้เป็นการ INSERT (สร้างบรรทัดใหม่) เสมอ
+        $insert = $conn->prepare("INSERT INTO meal_logs (user_id, recipe_id, meal_type, logged_at) VALUES (?, ?, ?, ?)");
+        $insert->bind_param("iiss", $user_id, $recipe_id, $meal_type, $logged_at);
+        $insert->execute();
+        
+        echo json_encode(['status' => 'success']);
+        exit();
+    }
+
+    if ($action === 'delete_log') {
+        $log_id = (int)$_POST['log_id'];
+        $stmt = $conn->prepare("DELETE FROM meal_logs WHERE id = ? AND user_id = ?");
+        $stmt->bind_param("ii", $log_id, $user_id);
+        echo json_encode(['status' => $stmt->execute() ? 'success' : 'error']);
+        exit();
+    }
+
+    if ($action === 'delete_ai_menu') {
+        $menu_id = (int)$_POST['menu_id'];
+        $stmt = $conn->prepare("DELETE FROM ai_saved_menus WHERE id = ? AND user_id = ?");
+        $stmt->bind_param("ii", $menu_id, $user_id);
+        echo json_encode(['status' => $stmt->execute() ? 'success' : 'error']);
+        exit();
+    }
 
     if ($action === 'log_recipe') {
         $rid_raw   = $_POST['recipe_id'];
@@ -60,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $ai_data = $ai_fetch->get_result()->fetch_assoc();
             
             if ($ai_data) {
-                // เช็คว่าเคยเพิ่มเมนูนี้ไปในตาราง recipes หรือยัง จะได้ไม่เพิ่มซ้ำซ้อน
+                // เช็คว่ามีเมนู AI นี้ในตาราง recipes หลักหรือยัง
                 $check_r = $conn->prepare("SELECT id FROM recipes WHERE title = ? AND calories = ? LIMIT 1");
                 $check_r->bind_param("si", $ai_data['menu_name'], $ai_data['calories']);
                 $check_r->execute();
@@ -75,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $ins->execute();
                     $rid = $conn->insert_id;
                 }
-                
             } else {
                 echo json_encode(['status' => 'error']);
                 exit();
@@ -84,9 +115,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $rid = (int)$rid_raw;
         }
 
+        // ✅ แก้ไข: ลบระบบ Update ของเก่าทิ้ง ใช้เป็นการ INSERT (สร้างบรรทัดใหม่) เสมอ
         $stmt = $conn->prepare("INSERT INTO meal_logs (user_id, recipe_id, meal_type, logged_at) VALUES (?,?,?,?)");
         $stmt->bind_param("iiss", $user_id, $rid, $meal_type, $logged_at);
-        echo json_encode(['status' => $stmt->execute() ? 'success' : 'error']);
+        $stmt->execute();
+
+        echo json_encode(['status' => 'success']);
         exit();
     }
 
