@@ -395,7 +395,7 @@ main {
 
       <div class="card" style="padding:24px;">
         <h2 class="stitle" style="margin-bottom:18px;"><i class="fas fa-utensils" style="color: #22c55e;"></i> สัดส่วนมื้ออาหาร</h2>
-        <p style="font-size:.7rem;color:var(--muted);margin-bottom:16px;">7 วันที่ผ่านมา</p>
+        <p style="font-size:.7rem;color:var(--muted);margin-bottom:16px;"> <?= $days_logged ?> วันที่ผ่านมา</p>
 
         <?php
         $meal_colors = [
