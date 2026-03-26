@@ -113,7 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch all recipes
 $recipes_sql = "
     SELECT r.id, r.title, r.description, r.instructions, r.calories, r.image, r.created_at,
-           (SELECT COUNT(*) FROM meal_logs WHERE recipe_id = r.id) as log_count
+           (SELECT COUNT(*) FROM meal_logs WHERE recipe_id = r.id) as log_count,
+           DATEDIFF(NOW(), r.created_at) as days_old
     FROM recipes r
     ORDER BY r.created_at DESC
 ";
@@ -319,11 +320,18 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($recipes as $r): ?>
-            <tr>
+            <?php foreach ($recipes as $r): 
+              $is_new = (isset($r['days_old']) && $r['days_old'] <= 3);
+            ?>
+            <tr <?= $is_new ? 'style="background:#fef9c3;border-left:3px solid #fbbf24;"' : '' ?>>
               <td><?= $r['id'] ?></td>
               <td>
-                <div style="font-weight:600;color:var(--txt);"><?= htmlspecialchars($r['title']) ?></div>
+                <div style="font-weight:600;color:var(--txt);">
+                  <?= htmlspecialchars($r['title']) ?>
+                  <?php if ($is_new): ?>
+                  <span style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#fff;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;text-shadow:0 1px 2px rgba(0,0,0,.15);">NEW</span>
+                  <?php endif; ?>
+                </div>
                 <div style="font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">
                   <?= htmlspecialchars($r['description'] ?? '-') ?>
                 </div>

@@ -40,7 +40,8 @@ $filter_allergies = isset($_GET['allergies']) ? (array)$_GET['allergies'] : [];
 $sql = "SELECT r.*, 
         (SELECT COUNT(*) FROM user_interactions ui 
          WHERE ui.recipe_id = r.id AND ui.user_id = ? AND ui.interaction_type = 'favorite') as is_fav,
-        COALESCE(r.view_count, 0) as views
+        COALESCE(r.view_count, 0) as views,
+        DATEDIFF(NOW(), r.created_at) as days_old
         FROM recipes r 
         ORDER BY r.id DESC";
 $stmt = $conn->prepare($sql);
@@ -163,6 +164,41 @@ main { padding: 2rem 2.5rem 3.5rem; width: 100%; max-width: 100%; margin: 0 auto
 /* Recipe Card */
 .r-card{background:#fff;border:1px solid var(--bdr);border-radius:18px;overflow:hidden;transition:all .22s;cursor:pointer;display:flex;flex-direction:column;position:relative;}
 .r-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(34,197,94,.12);border-color:var(--g300);}
+
+/* NEW Badge */
+.new-badge{
+  position:absolute;
+  top:12px;
+  left:12px;
+  z-index:15;
+  background:linear-gradient(135deg, #fbbf24, #f59e0b);
+  color:#fff;
+  padding:5px 12px;
+  border-radius:20px;
+  font-size:.65rem;
+  font-weight:800;
+  font-family:'Nunito',sans-serif;
+  letter-spacing:.03em;
+  box-shadow:0 4px 12px rgba(251,191,36,.4);
+  display:flex;
+  align-items:center;
+  gap:4px;
+  animation:newBadgePulse 2s ease-in-out infinite;
+}
+.new-badge-text{
+  text-shadow:0 1px 2px rgba(0,0,0,.15);
+}
+
+@keyframes newBadgePulse{
+  0%, 100%{
+    transform:scale(1);
+    box-shadow:0 4px 12px rgba(251,191,36,.4);
+  }
+  50%{
+    transform:scale(1.05);
+    box-shadow:0 6px 16px rgba(251,191,36,.6);
+  }
+}
 
 .r-img{height:180px;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
 .r-img img{width:100%;height:100%;object-fit:cover;}
@@ -319,6 +355,13 @@ main { padding: 2rem 2.5rem 3.5rem; width: 100%; max-width: 100%; margin: 0 auto
       <div class="recipe-grid">
         <?php foreach ($recipes as $r): ?>
         <div class="r-card" onclick="location.href='recipe_detail.php?id=<?= $r['id'] ?>'">
+          <!-- NEW Badge -->
+          <?php if (isset($r['days_old']) && $r['days_old'] <= 3): ?>
+          <div class="new-badge">
+            <span class="new-badge-text">✨ NEW</span>
+          </div>
+          <?php endif; ?>
+          
           <div class="r-img">
             <?php
             $img = '../public/uploads/'.$r['image'];
