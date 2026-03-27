@@ -253,7 +253,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
     
     <div style="flex: 1; min-width: 0;">
       <div style="font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;color:var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">เชฟ AI อัจฉริยะ</div>
-      <div style="font-size:.7rem;color:var(--g600);font-weight:500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">พร้อมให้บริการคุณ <?= htmlspecialchars($user_name) ?></div>
+      <div style="font-size:.7rem;color:var(--g600);font-weight:500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">พร้อมให้บริการคุณ <?= htmlspecialchars($username) ?></div>
     </div>
 
     <div style="margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:6px 12px; flex-shrink: 0;">
